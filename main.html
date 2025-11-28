@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GETリクエスト</title>
+  <style>
+    table, th, td {
+      border: solid black 1px;
+      border-collapse: collapse;
+      padding: 5px 10px;
+    }
+  </style>
+  <script src="https://unpkg.com/petite-vue" defer init></script>
+</head>
+
+<body v-scope="dataset()">
+  <p>
+    <button @click="fetchData">データ取得</button>
+  </p>
+
+  <!--
+  <table>
+    <tr>
+      <td rowspan="3"><img /></td>
+      <td>氏名</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>居住国</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>メール</td>
+      <td></td>
+    </tr>
+  </table>
+  -->
+</body>
+
+<script>
+  function dataset() {
+    return {
+      async fetchData() {
+        // ...
+      }
+    }
+  }
+</script>
+</html>
