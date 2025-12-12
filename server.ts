@@ -15,7 +15,8 @@ export const dbClient = new Client(config);
 
 async function handleInventoryUpdate(ctx: any) {
   // 1. フォームデータから手動入力された値を取得
-  const formData = await ctx.request.formData();
+  const body = await ctx.request.body({ type: 'form' });
+  const formData = body.value;
   const inputterName = formData.get('last_inputter') as string;
   const itemName = formData.get('item_id') as string;
   const newBalance = formData.get(`balance_${itemName}`) as string;
@@ -42,6 +43,50 @@ async function handleInventoryUpdate(ctx: any) {
     [newBalance, inputterName, serverTimestamp, itemName]
   );
 
-  // 成功後、在庫一覧ページにリダイレクト
-  ctx.response.redirect('/inventory');
+  // 成功後、在庫一覧ページ（静的ファイル）にリダイレクト
+  ctx.response.redirect('/inventory.html');
 }
+
+// --- 以下：最小サーバ実装（静的配信 + POST ハンドラ） ---
+declare const Deno: any;
+// TypeChecker 環境で外部 URL 解決ができない場合があるため一時的に suppress
+// @ts-ignore
+import { Application, Router, send } from 'https://deno.land/x/oak@v14.0.0/mod.ts';
+
+const router = new Router();
+router.post('/api/inventory-update', async (ctx: any) => {
+  try {
+    await handleInventoryUpdate(ctx);
+  } catch (err) {
+    console.error('handleInventoryUpdate error:', err);
+    ctx.response.status = 500;
+    ctx.response.body = 'Internal Server Error';
+  }
+});
+
+const app = new Application();
+
+// ロガー
+app.use(async (ctx: any, next: any) => {
+  await next();
+  console.log(`${ctx.request.method} ${ctx.request.url} -> ${ctx.response.status}`);
+});
+
+// ルーター（API）
+app.use(router.routes());
+app.use(router.allowedMethods());
+
+// 静的ファイル配信（ルートにあるファイルを返す）
+app.use(async (ctx: any) => {
+  const filePath = ctx.request.url.pathname === '/' ? '/index.html' : ctx.request.url.pathname;
+  try {
+    await send(ctx, filePath, { root: Deno.cwd() });
+  } catch {
+    ctx.response.status = 404;
+    ctx.response.body = 'Not Found';
+  }
+});
+
+const PORT = Number(Deno.env.get('PORT') || 8000);
+console.log(`Starting server on :${PORT}`);
+await app.listen({ port: PORT });
