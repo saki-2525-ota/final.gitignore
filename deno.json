@@ -1,5 +1,15 @@
 {
-  "unstable":[
-    "kv"
-  ]
+  "unstable": ["kv"],
+
+  "tasks": {
+    "start": "deno run --allow-net --allow-read --allow-env server.ts"
+  },
+  "imports": {
+    "@oak/": "https://deno.land/x/oak@v14.0.0/",
+    "@db/client.ts": "./db/client.ts"
+  },
+  "compilerOptions": {
+    "lib": ["dom", "deno.window"],
+    "strict": true
+  }
 }

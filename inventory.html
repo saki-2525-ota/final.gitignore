@@ -1,0 +1,33 @@
+<section id="inventory-list">
+  <h2>在庫一覧 - 現在の残量入力</h2>
+
+  <div class="input-header">
+    <label for="inputter-name">担当者名:</label>
+    <input type="text" id="inputter-name" name="inputter_name" />
+    <p class="guide">※時刻は「更新」ボタンを押した際に自動で記録されます。</p>
+  </div>
+
+  <form action="/api/inventory-update" method="POST" id="inventory-form">
+    <table>
+      <thead>
+        <tr>
+          <th>商品名</th>
+          <th>残量</th>
+          <th>単位</th>
+          <th>時刻</th>
+          <th>アクション</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>つくね</td>
+          <td><input type="number" name="balance_つくね" value="10" min="0" required /></td>
+          <td><span class="unit">バット</span></td>
+          <td>11:40</td>
+          <td><button type="submit" name="item_id" value="つくね">更新</button></td>
+        </tr>
+      </tbody>
+    </table>
+    <input type="hidden" name="last_inputter" id="hidden-inputter" />
+  </form>
+</section>
