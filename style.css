@@ -15,19 +15,6 @@ header {
   align-items: center;
 }
 
-nav a {
-  color: white;
-  text-decoration: none;
-  margin: 0 15px;
-  padding: 5px;
-  border-bottom: 3px solid transparent;
-}
-
-nav a:hover,
-nav a.active {
-  border-bottom: 3px solid #f90; /* アクティブなメニューを強調 */
-}
-
 main {
   padding: 20px;
 }
