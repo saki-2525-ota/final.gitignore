@@ -1,0 +1,65 @@
+/* style.css */
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #f4f4f9;
+}
+
+header {
+  background-color: #333;
+  color: white;
+  padding: 10px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+nav a {
+  color: white;
+  text-decoration: none;
+  margin: 0 15px;
+  padding: 5px;
+  border-bottom: 3px solid transparent;
+}
+
+nav a:hover,
+nav a.active {
+  border-bottom: 3px solid #f90; /* アクティブなメニューを強調 */
+}
+
+main {
+  padding: 20px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+  background-color: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+th,
+td {
+  padding: 12px 15px;
+  border: 1px solid #ddd;
+  text-align: left;
+}
+
+th {
+  background-color: #f0f0f0;
+}
+
+.unit {
+  color: #666;
+  font-size: 0.9em;
+  margin-left: 5px;
+}
+
+/* 予約画面のスタイル調整 */
+.reservation-table td:nth-child(4), /* 希望の席 */
+.reservation-table td:nth-child(5) {
+  /* メモ */
+  width: 20%;
+}
