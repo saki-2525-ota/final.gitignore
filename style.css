@@ -6,17 +6,53 @@ body {
   background-color: #f4f4f9;
 }
 
-header {
-  background-color: #333;
-  color: white;
-  padding: 10px 20px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
 main {
   padding: 20px;
+}
+
+#dashboard {
+  text-align: center;
+  padding: 50px 20px;
+}
+
+.push {
+  display: grid;
+  /* 3列で配置し、中央に寄せる */
+  grid-template-columns: repeat(3, 1fr);
+  gap: 30px;
+  max-width: 900px;
+  margin: 30px auto; /* 画面中央に配置 */
+}
+
+push a:nth-child(4) {
+  grid-column: 2/3;
+}
+
+push a:nth-child(5) {
+  grid-column: 3/4;
+}
+
+button {
+  border: none;
+  background-color: #ff9933;
+  color: white;
+  font-size: 1.2em;
+  font-weight: bold;
+}
+.menu-button {
+  background-color: #ff9933;
+  text-decoration: none;
+  padding: 40px 20px;
+  border-radius: 8px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 80px; /* ボタンの縦幅を確保 */
+}
+
+.menu-button:hover {
+  background-color: #e68a00; /* ホバー時の色 */
+  transform: translateY(-2px);
 }
 
 table {
