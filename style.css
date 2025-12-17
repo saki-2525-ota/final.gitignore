@@ -86,3 +86,40 @@ th {
   /* メモ */
   width: 20%;
 }
+
+/* 日付ヘッダーのスタイル */
+#current-date {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+/* 予約テーブルの特定の列結合（時間帯）の背景色を強調 */
+#reservation-body td:first-child {
+  background-color: #f7f7f7;
+  font-weight: bold;
+  text-align: center;
+}
+
+/* --- ナビゲーションボタンのスタイル --- */
+.date-nav {
+  display: flex;
+  justify-content: space-between; /* 左右に配置 */
+  width: 100%;
+  margin-top: 20px;
+  padding: 0 10px;
+}
+
+.nav-button {
+  font-size: 0.9em;
+  padding: 5px 10px;
+  background-color: #e0e0e0;
+  color: #333;
+  text-decoration: none;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+  border: 1px solid #ccc; /* 枠線を追加してボタン感を出す */
+}
+
+.nav-button:hover {
+  background-color: #ccc;
+}
