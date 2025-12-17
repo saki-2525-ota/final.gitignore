@@ -1,125 +1,190 @@
 /* style.css */
 body {
   font-family: Arial, sans-serif;
-  margin: 0;
-  padding: 0;
-  background-color: #f4f4f9;
-}
+  /* style.css (cleaned) */
+  body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f9;
+  }
 
-main {
-  padding: 20px;
-}
+  main {
+    padding: 40px;
+  }
 
-#dashboard {
-  text-align: center;
-  padding: 50px 20px;
-}
+  #dashboard {
+    text-align: center;
+    padding: 50px 20px;
+  }
 
-.push {
-  display: grid;
-  /* 3列で配置し、中央に寄せる */
-  grid-template-columns: repeat(3, 1fr);
-  gap: 30px;
-  max-width: 900px;
-  margin: 30px auto; /* 画面中央に配置 */
-}
+  .push {
+    display: grid;
+    /* 3列で配置し、中央に寄せる */
+    grid-template-columns: repeat(3, 1fr);
+    gap: 30px;
+    max-width: 900px;
+    margin: 30px auto; /* 画面中央に配置 */
+  }
 
-push a:nth-child(4) {
-  grid-column: 2/3;
-}
+  .push a:nth-child(4) {
+    grid-column: 2/3;
+  }
 
-push a:nth-child(5) {
-  grid-column: 3/4;
-}
+  .push a:nth-child(5) {
+    grid-column: 3/4;
+  }
 
-button {
-  border: none;
-  background-color: #ff9933;
-  color: white;
-  font-size: 1.2em;
-  font-weight: bold;
-}
-.menu-button {
-  background-color: #ff9933;
-  text-decoration: none;
-  padding: 40px 20px;
-  border-radius: 8px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 80px; /* ボタンの縦幅を確保 */
-}
+  button {
+    border: none;
+    background-color: #ff9933;
+    color: white;
+    font-size: 1.2em;
+    font-weight: bold;
+  }
+  .menu-button {
+    background-color: #ff9933;
+    text-decoration: none;
+    padding: 40px 20px;
+    border-radius: 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 80px; /* ボタンの縦幅を確保 */
+  }
 
-.menu-button:hover {
-  background-color: #e68a00; /* ホバー時の色 */
-  transform: translateY(-2px);
-}
+  .menu-button:hover {
+    background-color: #e68a00; /* ホバー時の色 */
+    transform: translateY(-2px);
+  }
 
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 20px;
-  background-color: white;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    background-color: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    font-size: 1rem;
+  }
 
-th,
-td {
-  padding: 12px 15px;
-  border: 1px solid #ddd;
-  text-align: left;
-}
+  th,
+  td {
+    padding: 16px 18px;
+    border: 1px solid #ddd;
+    text-align: left;
+    font-size: 1.02rem;
+  }
 
-th {
-  background-color: #f0f0f0;
-}
+  th {
+    background-color: #f0f0f0;
+  }
 
-.unit {
-  color: #666;
-  font-size: 0.9em;
-  margin-left: 5px;
-}
+  .unit {
+    color: #666;
+    font-size: 0.9em;
+    margin-left: 5px;
+  }
 
-/* 予約画面のスタイル調整 */
-.reservation-table td:nth-child(4), /* 希望の席 */
-.reservation-table td:nth-child(5) {
-  /* メモ */
-  width: 20%;
-}
+  /* 予約画面のスタイル調整 */
+  .reservation-table td:nth-child(4), /* 希望の席 */
+  .reservation-table td:nth-child(5) {
+    /* メモ */
+    width: 20%;
+  }
 
-/* 日付ヘッダーのスタイル */
-#current-date {
-  text-align: center;
-  margin-bottom: 20px;
-}
+  /* 日付ヘッダーのスタイル */
+  #current-date {
+    text-align: center;
+    margin-bottom: 20px;
+  }
 
-/* 予約テーブルの特定の列結合（時間帯）の背景色を強調 */
-#reservation-body td:first-child {
-  background-color: #f7f7f7;
-  font-weight: bold;
-  text-align: center;
-}
+  /* 予約テーブルの特定の列結合（時間帯）の背景色を強調 */
+  #reservation-body td:first-child {
+    background-color: #f7f7f7;
+    font-weight: bold;
+    text-align: center;
+  }
 
-/* --- ナビゲーションボタンのスタイル --- */
-.date-nav {
-  display: flex;
-  justify-content: space-between; /* 左右に配置 */
-  width: 100%;
-  margin-top: 20px;
-  padding: 0 10px;
-}
+  /* --- ナビゲーションボタンのスタイル --- */
+  .date-nav {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    margin-top: 24px;
+    padding: 0 8px;
+    box-sizing: border-box;
+  }
 
-.nav-button {
-  font-size: 0.9em;
-  padding: 5px 10px;
-  background-color: #e0e0e0;
-  color: #333;
-  text-decoration: none;
-  border-radius: 4px;
-  transition: background-color 0.2s;
-  border: 1px solid #ccc; /* 枠線を追加してボタン感を出す */
-}
+  .nav-button {
+    font-size: 0.9em;
+    padding: 5px 10px;
+    background-color: #e0e0e0;
+    color: #333;
+    text-decoration: none;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+    border: 1px solid #ccc; /* 枠線を追加してボタン感を出す */
+  }
 
-.nav-button:hover {
-  background-color: #ccc;
+  .nav-button:hover {
+    background-color: #ccc;
+  }
+
+  /* 予約セクションのレイアウトを整える */
+  #reservations-list {
+    max-width: 1400px;
+    width: 90%;
+    margin: 0 auto;
+    padding: 24px;
+    box-sizing: border-box;
+  }
+
+  /* 2. 日付ナビゲーションの調整 */
+  .date-nav {
+    /* position: absoluteやfixedの子要素がある場合は、ここが基準となる */
+    position: relative; /* 子要素のabsoluteの基準点 */
+    margin-top: 24px;
+    height: 40px; /* ナビゲーションバーの高さを確保 */
+  }
+
+  /* 「昨日」ボタンの位置調整 */
+  .nav-button.left {
+    position: absolute; /* 親要素 .date-nav の左端に固定 */
+    left: 0;
+    top: 0;
+  }
+
+  /* 「明日」ボタンをビューポート（画面）の右端に固定 */
+  .nav-button.right {
+    position: fixed; /* 画面の右端に固定 */
+    top: 120px; /* 日付ヘッダーの下にくるように適切な上端位置を設定 (例: 120px) */
+    right: 40px; /* 画面右端から40pxの余白 */
+    z-index: 50;
+
+    /* 見た目の調整 */
+    background-color: #e0e0e0;
+    color: #333;
+    border-radius: 4px;
+    padding: 6px 12px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  }
+
+  /* 4. モバイルでの固定解除の調整 */
+  @media (max-width: 768px) {
+    /* モバイルのブレイクポイント */
+    .nav-button.right {
+      position: static; /* 固定を解除し、通常の位置に戻す */
+      right: auto;
+      top: auto;
+      margin-left: auto; /* 画面右端に寄せるために再びautoを設定 */
+      box-shadow: none;
+    }
+    /* 昨日ボタンも通常フローに戻す */
+    .nav-button.left {
+      position: static;
+    }
+    .date-nav {
+      justify-content: space-between; /* 左右に並べる */
+    }
+  }
 }
