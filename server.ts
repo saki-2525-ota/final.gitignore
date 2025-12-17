@@ -54,6 +54,51 @@ declare const Deno: any;
 import { Application, Router, send, Context } from 'https://deno.land/x/oak@v14.0.0/mod.ts';
 
 const router = new Router();
+// GET /reservations: render reservations.html with formattedDate and dynamic nav links
+router.get('/reservations', async (ctx: any) => {
+  try {
+    // Read template
+    const raw = await Deno.readTextFile('reservations.html');
+
+    // Determine target date from query (YYYY-MM-DD) or use today
+    const url = new URL(ctx.request.url);
+    const dateParam = url.searchParams.get('date');
+    const today = new Date();
+    const targetDate = dateParam ? new Date(`${dateParam}T00:00:00`) : today;
+
+    const yyyy = targetDate.getFullYear();
+    const mm = String(targetDate.getMonth() + 1).padStart(2, '0');
+    const dd = String(targetDate.getDate()).padStart(2, '0');
+    const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
+    const weekday = weekdays[targetDate.getDay()];
+    const formattedDate = `${yyyy}年${mm}月${dd}日 (${weekday})`;
+
+    const yesterday = new Date(targetDate);
+    yesterday.setDate(targetDate.getDate() - 1);
+    const tomorrow = new Date(targetDate);
+    tomorrow.setDate(targetDate.getDate() + 1);
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    const tomorrowStr = tomorrow.toISOString().split('T')[0];
+
+    // Replace placeholder and nav links
+    let content = raw.replace(/\$\{formattedDate\}/g, formattedDate);
+    content = content.replace(
+      /<a\s+id="nav-yesterday"[^>]*href="[^"]*"/i,
+      `<a id="nav-yesterday" href="/reservations?date=${yesterdayStr}"`
+    );
+    content = content.replace(
+      /<a\s+id="nav-tomorrow"[^>]*href="[^"]*"/i,
+      `<a id="nav-tomorrow" href="/reservations?date=${tomorrowStr}"`
+    );
+
+    ctx.response.type = 'text/html';
+    ctx.response.body = content;
+  } catch (err) {
+    console.error('renderReservations error:', err);
+    ctx.response.status = 500;
+    ctx.response.body = 'Internal Server Error';
+  }
+});
 router.post('/api/inventory-update', async (ctx: any) => {
   try {
     await handleInventoryUpdate(ctx);
@@ -90,25 +135,3 @@ app.use(async (ctx: any) => {
 const PORT = Number(Deno.env.get('PORT') || 8000);
 console.log(`Starting server on :${PORT}`);
 await app.listen({ port: PORT });
-
-async function renderReservationsPage(ctx: Context) {
-  const url = new URL(ctx.request.url);
-  const dateParam = url.searchParams.get('date');
-
-  // 1. 表示日付の決定
-  const today = new Date();
-  // URLに日付がなければ、今日の日付を使用
-  const targetDate = dateParam ? new Date(dateParam) : today;
-
-  // YYYY-MM-DD形式に変換
-  const dateStr = targetDate.toISOString().split('T')[0];
-
-  // 2. ナビゲーション日付の計算
-  const yesterday = new Date(targetDate);
-  yesterday.setDate(targetDate.getDate() - 1);
-  const tomorrow = new Date(targetDate);
-  tomorrow.setDate(targetDate.getDate() + 1);
-
-  // 3. データベースから該当日の予約データを取得
-  // const reservations = await dbClient.query(`SELECT * FROM reservations WHERE date = $1`, [dateStr]);
-}
