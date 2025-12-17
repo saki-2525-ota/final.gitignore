@@ -1,6 +1,6 @@
 <link rel="stylesheet" href="style.css" />
 <section id="reservations-list">
-  <h2 id="current-date">${formattedDate} の予約</h2>
+  <h2 id="current-date"><span id="display-date-target"></span>の予約</h2>
 
   <table>
     <thead>
@@ -84,30 +84,4 @@
     <a id="nav-tomorrow" href="/reservations?date=2025-12-19" class="nav-button right">明日 →</a>
   </div>
 </section>
-<script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const tomorrow = document.getElementById('nav-tomorrow');
-    const nav = document.querySelector('.date-nav');
-    if (!tomorrow || !nav) return;
-
-    function applyFixed() {
-      // 幅が狭い場合は固定しない
-      if (window.innerWidth <= 640) {
-        tomorrow.classList.remove('fixed-to-viewport');
-        tomorrow.style.top = '';
-        return;
-      }
-
-      // nav の縦位置に合わせて固定する
-      const rect = nav.getBoundingClientRect();
-      const top = rect.top + window.scrollY;
-      tomorrow.classList.add('fixed-to-viewport');
-      // ビューポート上の位置を合わせるため top をセット
-      tomorrow.style.top = `${rect.top + 8}px`;
-    }
-
-    applyFixed();
-    window.addEventListener('resize', applyFixed);
-    window.addEventListener('scroll', applyFixed);
-  });
-</script>
+<script src="reservations.js"></script>
