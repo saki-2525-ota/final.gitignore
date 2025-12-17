@@ -51,7 +51,7 @@ async function handleInventoryUpdate(ctx: any) {
 declare const Deno: any;
 // TypeChecker 環境で外部 URL 解決ができない場合があるため一時的に suppress
 // @ts-ignore
-import { Application, Router, send } from 'https://deno.land/x/oak@v14.0.0/mod.ts';
+import { Application, Router, send, Context } from 'https://deno.land/x/oak@v14.0.0/mod.ts';
 
 const router = new Router();
 router.post('/api/inventory-update', async (ctx: any) => {
@@ -90,3 +90,25 @@ app.use(async (ctx: any) => {
 const PORT = Number(Deno.env.get('PORT') || 8000);
 console.log(`Starting server on :${PORT}`);
 await app.listen({ port: PORT });
+
+async function renderReservationsPage(ctx: Context) {
+  const url = new URL(ctx.request.url);
+  const dateParam = url.searchParams.get('date');
+
+  // 1. 表示日付の決定
+  const today = new Date();
+  // URLに日付がなければ、今日の日付を使用
+  const targetDate = dateParam ? new Date(dateParam) : today;
+
+  // YYYY-MM-DD形式に変換
+  const dateStr = targetDate.toISOString().split('T')[0];
+
+  // 2. ナビゲーション日付の計算
+  const yesterday = new Date(targetDate);
+  yesterday.setDate(targetDate.getDate() - 1);
+  const tomorrow = new Date(targetDate);
+  tomorrow.setDate(targetDate.getDate() + 1);
+
+  // 3. データベースから該当日の予約データを取得
+  // const reservations = await dbClient.query(`SELECT * FROM reservations WHERE date = $1`, [dateStr]);
+}
