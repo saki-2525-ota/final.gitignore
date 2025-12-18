@@ -1,6 +1,5 @@
 {
   "unstable": ["kv"],
-
   "tasks": {
     "start": "deno run --allow-net --allow-read --allow-env server.ts"
   },
@@ -11,5 +10,11 @@
   "compilerOptions": {
     "lib": ["dom", "deno.window"],
     "strict": true
+  },
+  "lint": {
+    "rules": {
+      "tags": ["recommended"],
+      "exclude": ["no-explicit-any", "require-await", "no-unused-vars"]
+    }
   }
 }

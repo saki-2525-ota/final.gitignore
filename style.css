@@ -173,3 +173,27 @@ th {
     justify-content: space-between;
   }
 }
+
+/* 読み取り専用の入力欄（残量・提案発注量） */
+input[readonly] {
+  background-color: #f0f0f0; /* 薄いグレー */
+  color: #666;
+  border: 1px solid #ccc;
+  cursor: not-allowed; /* 禁止マーク */
+}
+
+input[readonly]:focus {
+  outline: none;
+}
+
+/* 発注量（手入力）のplaceholderをグレーにする */
+input::placeholder {
+  color: #bbb;
+  font-style: italic;
+}
+
+/* 提案発注量の強調（重要だけどいじれない） */
+.suggested-amount {
+  font-weight: bold;
+  color: #d9534f;
+}
