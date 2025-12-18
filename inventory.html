@@ -1,12 +1,6 @@
 <link rel="stylesheet" href="style.css" />
 <section id="inventory-list">
-  <h2>在庫一覧 - 現在の残量入力</h2>
-
-  <div class="input-header">
-    <label for="inputter-name">担当者名:</label>
-    <input type="text" id="inputter-name" name="inputter_name" />
-    <p class="guide">※時刻は「更新」ボタンを押した際に自動で記録されます。</p>
-  </div>
+  <h2>在庫一覧</h2>
 
   <form action="/api/inventory-update" method="POST" id="inventory-form">
     <table>
@@ -15,8 +9,6 @@
           <th>商品名</th>
           <th>残量</th>
           <th>単位</th>
-          <th>時刻</th>
-          <th>アクション</th>
         </tr>
       </thead>
       <tbody>
@@ -24,222 +16,160 @@
           <td>つくね</td>
           <td><input type="number" name="balance_つくね" value="10" min="0" required /></td>
           <td><span class="unit">バット</span></td>
-          <td>11:40</td>
-          <td><button type="submit" name="item_id" value="つくね">更新</button></td>
         </tr>
+
         <tr>
           <td>かわ</td>
           <td><input type="number" name="balance_かわ" value="10" min="0" required /></td>
           <td><span class="unit">バット</span></td>
-          <td>11:40</td>
-          <td><button type="submit" name="item_id" value="かわ">更新</button></td>
         </tr>
         <tr>
           <td>ぼんじり</td>
           <td><input type="number" name="balance_ぼんじり" value="10" min="0" required /></td>
           <td><span class="unit">バット</span></td>
-          <td>11:40</td>
-          <td><button type="submit" name="item_id" value="ぼんじり">更新</button></td>
         </tr>
         <tr>
           <td>きも</td>
           <td><input type="number" name="balance_きも" value="10" min="0" required /></td>
           <td><span class="unit">バット</span></td>
-          <td>11:40</td>
-          <td><button type="submit" name="item_id" value="きも">更新</button></td>
         </tr>
         <tr>
           <td>はつ</td>
           <td><input type="number" name="balance_はつ" value="10" min="0" required /></td>
           <td><span class="unit">バット</span></td>
-          <td>11:40</td>
-          <td><button type="submit" name="item_id" value="はつ">更新</button></td>
         </tr>
         <tr>
           <td>ささみ</td>
           <td><input type="number" name="balance_ささみ" value="10" min="0" required /></td>
           <td><span class="unit">バット</span></td>
-          <td>11:40</td>
-          <td><button type="submit" name="item_id" value="ささみ">更新</button></td>
         </tr>
         <tr>
           <td>せせり</td>
           <td><input type="number" name="balance_せせり" value="10" min="0" required /></td>
           <td><span class="unit">バット</span></td>
-          <td>11:40</td>
-          <td><button type="submit" name="item_id" value="せせり">更新</button></td>
         </tr>
         <tr>
           <td>ねぎま</td>
           <td><input type="number" name="balance_ねぎま" value="10" min="0" required /></td>
           <td><span class="unit">バット</span></td>
-          <td>11:40</td>
-          <td><button type="submit" name="item_id" value="ねぎま">更新</button></td>
         </tr>
         <tr>
           <td>トマト</td>
           <td><input type="number" name="balance_トマト" value="10" min="0" required /></td>
           <td><span class="unit">個</span></td>
-          <td>11:40</td>
-          <td><button type="submit" name="item_id" value="トマト">更新</button></td>
         </tr>
         <tr>
           <td>なす</td>
           <td><input type="number" name="balance_なす" value="10" min="0" required /></td>
           <td><span class="unit">個</span></td>
-          <td>11:40</td>
-          <td><button type="submit" name="item_id" value="なす">更新</button></td>
         </tr>
         <tr>
           <td>きゅうり</td>
           <td><input type="number" name="balance_きゅうり" value="10" min="0" required /></td>
           <td><span class="unit">個</span></td>
-          <td>11:40</td>
-          <td><button type="submit" name="item_id" value="きゅうり">更新</button></td>
         </tr>
         <tr>
           <td>はくさい</td>
           <td><input type="number" name="balance_はくさい" value="10" min="0" required /></td>
           <td><span class="unit">個</span></td>
-          <td>11:40</td>
-          <td><button type="submit" name="item_id" value="はくさい">更新</button></td>
         </tr>
         <tr>
           <td>うずらの卵</td>
           <td><input type="number" name="balance_うずらの卵" value="10" min="0" required /></td>
           <td><span class="unit">個</span></td>
-          <td>11:40</td>
-          <td><button type="submit" name="item_id" value="うずらの卵">更新</button></td>
         </tr>
         <tr>
           <td>生卵</td>
           <td><input type="number" name="balance_生卵" value="10" min="0" required /></td>
           <td><span class="unit">個</span></td>
-          <td>11:40</td>
-          <td><button type="submit" name="item_id" value="生卵">更新</button></td>
         </tr>
         <tr>
           <td>フライドポテト</td>
           <td><input type="number" name="balance_フライドポテト" value="10" min="0" required /></td>
           <td><span class="unit">個</span></td>
-          <td>11:40</td>
-          <td><button type="submit" name="item_id" value="フライドポテト">更新</button></td>
         </tr>
         <tr>
           <td>豆腐</td>
           <td><input type="number" name="balance_豆腐" value="10" min="0" required /></td>
           <td><span class="unit">個</span></td>
-          <td>11:40</td>
-          <td><button type="submit" name="item_id" value="豆腐">更新</button></td>
         </tr>
         <tr>
           <td>鶏むね肉</td>
           <td><input type="number" name="balance_鶏むね肉" value="10" min="0" required /></td>
           <td><span class="unit">個</span></td>
-          <td>11:40</td>
-          <td><button type="submit" name="item_id" value="鶏むね肉">更新</button></td>
         </tr>
         <tr>
           <td>生ビール樽</td>
           <td><input type="number" name="balance_生ビール樽" value="10" min="0" required /></td>
           <td><span class="unit">樽</span></td>
-          <td>11:40</td>
-          <td><button type="submit" name="item_id" value="生ビール樽">更新</button></td>
         </tr>
         <tr>
           <td>ハイボール</td>
           <td><input type="number" name="balance_ハイボール" value="10" min="0" required /></td>
           <td><span class="unit">本</span></td>
-          <td>11:40</td>
-          <td><button type="submit" name="item_id" value="ハイボール">更新</button></td>
         </tr>
         <tr>
           <td>サワーベース</td>
           <td><input type="number" name="balance_サワーベース" value="10" min="0" required /></td>
           <td><span class="unit">本</span></td>
-          <td>11:40</td>
-          <td><button type="submit" name="item_id" value="サワーベース">更新</button></td>
         </tr>
         <tr>
           <td>カルピス</td>
           <td><input type="number" name="balance_カルピス" value="10" min="0" required /></td>
           <td><span class="unit">本</span></td>
-          <td>11:40</td>
-          <td><button type="submit" name="item_id" value="カルピス">更新</button></td>
         </tr>
         <tr>
           <td>オレンジジュース</td>
           <td><input type="number" name="balance_オレンジジュース" value="10" min="0" required /></td>
           <td><span class="unit">本</span></td>
-          <td>11:40</td>
-          <td><button type="submit" name="item_id" value="オレンジジュース">更新</button></td>
         </tr>
         <tr>
           <td>コーラ</td>
           <td><input type="number" name="balance_コーラ" value="10" min="0" required /></td>
           <td><span class="unit">本</span></td>
-          <td>11:40</td>
-          <td><button type="submit" name="item_id" value="コーラ">更新</button></td>
         </tr>
         <tr>
           <td>レモンシロップ</td>
           <td><input type="number" name="balance_レモンシロップ" value="10" min="0" required /></td>
           <td><span class="unit">本</span></td>
-          <td>11:40</td>
-          <td><button type="submit" name="item_id" value="レモンシロップ">更新</button></td>
         </tr>
         <tr>
           <td>イチゴシロップ</td>
           <td><input type="number" name="balance_ハイチゴシロップ" value="10" min="0" required /></td>
           <td><span class="unit">本</span></td>
-          <td>11:40</td>
-          <td><button type="submit" name="item_id" value="イチゴシロップ">更新</button></td>
         </tr>
         <tr>
           <td>マンゴーシロップ</td>
           <td><input type="number" name="balance_マンゴーシロップ" value="10" min="0" required /></td>
           <td><span class="unit">本</span></td>
-          <td>11:40</td>
-          <td><button type="submit" name="item_id" value="マンゴーシロップ">更新</button></td>
         </tr>
         <tr>
           <td>ごま油</td>
           <td><input type="number" name="balance_ごま油" value="10" min="0" required /></td>
           <td><span class="unit">本</span></td>
-          <td>11:40</td>
-          <td><button type="submit" name="item_id" value="ごま油">更新</button></td>
         </tr>
         <tr>
           <td>ポン酢</td>
           <td><input type="number" name="balance_ポン酢" value="10" min="0" required /></td>
           <td><span class="unit">本</span></td>
-          <td>11:40</td>
-          <td><button type="submit" name="item_id" value="ポン酢">更新</button></td>
         </tr>
         <tr>
           <td>醤油</td>
           <td><input type="number" name="balance_醤油" value="10" min="0" required /></td>
           <td><span class="unit">本</span></td>
-          <td>11:40</td>
-          <td><button type="submit" name="item_id" value="醤油">更新</button></td>
         </tr>
         <tr>
           <td>マヨネーズ</td>
           <td><input type="number" name="balance_マヨネーズ" value="10" min="0" required /></td>
           <td><span class="unit">本</span></td>
-          <td>11:40</td>
-          <td><button type="submit" name="item_id" value="マヨネーズ">更新</button></td>
         </tr>
         <tr>
           <td>ケチャップ</td>
           <td><input type="number" name="balance_ケチャップ" value="10" min="0" required /></td>
           <td><span class="unit">本</span></td>
-          <td>11:40</td>
-          <td><button type="submit" name="item_id" value="ケチャップ">更新</button></td>
         </tr>
       </tbody>
     </table>
     <input type="hidden" name="last_inputter" id="hidden-inputter" />
   </form>
 </section>
-<script src="script.js"></script>
