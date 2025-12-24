@@ -173,27 +173,31 @@ th {
     justify-content: space-between;
   }
 }
+/* style.css の該当部分を修正 */
 
-/* 読み取り専用の入力欄（残量・提案発注量） */
-input[readonly] {
-  background-color: #f0f0f0; /* 薄いグレー */
-  color: #666;
-  border: 1px solid #ccc;
-  cursor: not-allowed; /* 禁止マーク */
+.order-input {
+  width: 80px; /* 幅を固定して、文字が太くなっても動かないようにする */
+  padding: 5px;
+  border: 1px solid #ccc; /* 枠線を細く固定 */
+  border-radius: 4px;
+  outline: none; /* 青い枠線などを消す */
+  text-align: center;
+  transition: all 0.2s; /* 変化を滑らかにする */
+  box-sizing: border-box; /* 枠線を含めたサイズ計算にする */
 }
 
-input[readonly]:focus {
-  outline: none;
-}
-
-/* 発注量（手入力）のplaceholderをグレーにする */
-input::placeholder {
-  color: #bbb;
+/* 最初（未確定）の状態 */
+.order-input.unconfirmed {
+  color: #999;
   font-style: italic;
+  border: 1px solid #ddd; /* 控えめな色 */
 }
 
-/* 提案発注量の強調（重要だけどいじれない） */
-.suggested-amount {
+/* 更新後（確定）の状態 */
+.order-input.confirmed {
+  color: #000 !important;
   font-weight: bold;
-  color: #d9534f;
+  /* 太字になっても幅が変わらないよう、borderはそのまま */
+  border: 1px solid #333;
+  background-color: #f9f9f9;
 }

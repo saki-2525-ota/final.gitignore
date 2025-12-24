@@ -31,27 +31,39 @@ document.addEventListener('DOMContentLoaded', () => {
     const now = new Date();
     timeCell.textContent = now.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
 
+    // order.js の fetch 部分を以下に書き換え
     try {
-      // 3. 送信用データを作成（空の FormData から作るのが一番安全）
-      const formData = new FormData();
-      formData.append('item_id', itemName);
-      formData.append('balance', balanceValue);
-      formData.append('last_inputter', inputterName);
+      // 送るデータを準備
+      const params = new URLSearchParams();
+      params.append('item_id', itemName);
+      params.append('balance', balanceValue);
+      params.append('last_inputter', inputterName);
 
+      console.log('送るデータ:', params.toString()); // ブラウザのF12コンソールで確認用
+
+      // order.js の fetch 成功時の処理を書き換え
       const response = await fetch('/api/inventory-update', {
         method: 'POST',
-        body: formData
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: params
       });
 
       if (response.ok) {
-        console.log('サーバー側の更新も成功しました');
+        console.log('サーバー更新完了');
+
+        // --- ここで見た目を変更する ---
+        balanceInput.classList.remove('unconfirmed'); // グレーを消す
+        balanceInput.classList.add('confirmed'); // 黒くする
+        // ---------------------------
       } else {
         const msg = await response.text();
-        console.error('サーバーがエラーを返しました:', msg);
+        console.error('サーバーエラー:', msg);
         timeCell.textContent = 'Error';
       }
     } catch (error) {
-      console.error('通信自体に失敗しました:', error);
+      console.error('通信失敗:', error);
       timeCell.textContent = 'Error';
     }
   });

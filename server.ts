@@ -16,25 +16,27 @@ const config = {
 
 const dbClient = new Client(config);
 
-// --- 2. ハンドラ関数 (ロジック) ---
-
 // A. 在庫更新 (POST)
-// server.ts の A. 在庫更新 (POST) 部分
+// server.ts の handleInventoryUpdate をこれに差し替え
 async function handleInventoryUpdate(ctx: Context) {
   try {
-    const formData = await ctx.request.body.form();
+    // URLSearchParams 形式のデータを取得
+    const body = ctx.request.body;
+    const val = await body.form(); // ここを .form() にするのがポイント
 
-    const itemName = formData.get('item_id');
-    const newBalance = formData.get('balance'); // 名前を固定してシンプルに！
+    const itemName = val.get('item_id');
+    const newBalanceRaw = val.get('balance');
 
-    console.log(`[受信] 商品: ${itemName}, 数値: ${newBalance}`);
+    // ターミナルでこれが null にならないかチェック！
+    console.log(`[受信データ] 商品: ${itemName}, 入力値: ${newBalanceRaw}`);
 
-    if (!itemName || newBalance === null) {
+    if (!itemName || newBalanceRaw === null) {
       ctx.response.status = 400;
-      ctx.response.body = 'Missing data';
+      ctx.response.body = 'Missing data: ' + (itemName ? '' : 'item_id ') + (newBalanceRaw ? '' : 'balance');
       return;
     }
 
+    const newBalance = Number(newBalanceRaw);
     const serverTimestamp = new Date().toISOString();
 
     await dbClient.execute(`UPDATE inventory SET "残量" = $1, "発注量" = $1, last_updated = $2 WHERE "商品名" = $3`, [
@@ -51,7 +53,6 @@ async function handleInventoryUpdate(ctx: Context) {
     ctx.response.body = 'Internal Server Error';
   }
 }
-
 // B. 発注ページ表示 (GET /order)
 async function renderOrderPage(ctx: Context) {
   const result = await dbClient.execute(
@@ -70,42 +71,39 @@ async function renderOrderPage(ctx: Context) {
   const inventoryRows = (result ? result.rows : []) as InventoryItem[];
 
   let tableRowsHtml = '';
+  // server.ts の renderOrderPage 内のループ処理を修正
   for (const item of inventoryRows) {
     const name = item['商品名'];
     const stock = item['残量'];
-    const suggested = item['提案発注量'];
-    const orderInput = item['発注量'];
+    const suggested = item['提案発注量']; // 常にこれを使う
 
-    let timeStr = item.last_updated
-      ? new Date(item.last_updated).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })
-      : '--:--';
+    // 【修正】リロード時は DB の値ではなく常に '--:--' を表示させる
+    const timeStr = '--:--';
 
-    // HTMLの修正:
-    // 1. inputに name 属性を追加（FormData用）
-    // 2. tdに class="last-updated" を追加（order.jsの書き換え用）
-    // 3. ボタンから onclick を削除（ReferenceError対策）
-    // server.ts のループ内を以下に差し替え
     tableRowsHtml += `
-  <tr>
-    <td>${name}</td>
-    <td>${stock}</td>
-    <td class="suggested-cell">${suggested}</td>
-    <td>
-      <input type="number" 
-        name="balance"  
-        class="order-input" 
-        value="${orderInput}">
-    </td>
-    <td class="last-updated">${timeStr}</td>
-    <td>
-      <button type="submit" value="${name}" class="update-btn">更新</button>
-    </td>
-  </tr>
-`;
+      <tr>
+        <td>${name}</td>
+        <td>${stock}</td>
+        <td class="suggested-cell">${suggested}</td>
+        <td>
+          <input type="number" 
+            name="balance" 
+            class="order-input unconfirmed" 
+            value="${suggested}"> </td>
+        <td class="last-updated">${timeStr}</td>
+        <td>
+          <button type="submit" value="${name}" class="update-btn">更新</button>
+        </td>
+      </tr>
+    `;
   }
 
+  // server.ts の renderOrderPage の最後の方
   let html = await Deno.readTextFile('./order.html');
-  html = html.replace('<tbody id="order-body"></tbody>', `<tbody id="order-body">${tableRowsHtml}</tbody>`);
+
+  // 【修正】正規表現を使い、<tbody>の中身が空でも、改行があっても確実に置換します
+  html = html.replace(/<tbody id="order-body">[\s\S]*?<\/tbody>/, `<tbody id="order-body">${tableRowsHtml}</tbody>`);
+
   ctx.response.body = html;
   ctx.response.type = 'text/html';
 }
