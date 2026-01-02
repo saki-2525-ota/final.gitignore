@@ -3,9 +3,9 @@ import { Application, Router, send, Context } from 'https://deno.land/x/oak@v14.
 
 // --- 1. データベース設定 ---
 const config = {
-  hostname: 'aws-1-ap-northeast-2.pooler.supabase.com',
-  port: 6543,
-  user: 'postgres.fcxkkifntnubfxmnakpi',
+  hostname: 'db.fcxkkifntnubfxmnakpi.supabase.co',
+  port: 5432,
+  user: 'postgres',
   database: 'postgres',
   password: 'password0711',
   tls: {
@@ -17,22 +17,19 @@ const config = {
 const dbClient = new Client(config);
 
 // A. 在庫更新 (POST)
-// server.ts の handleInventoryUpdate をこれに差し替え
 async function handleInventoryUpdate(ctx: Context) {
   try {
-    // URLSearchParams 形式のデータを取得
     const body = ctx.request.body;
-    const val = await body.form(); // ここを .form() にするのがポイント
+    const val = await body.form();
 
     const itemName = val.get('item_id');
     const newBalanceRaw = val.get('balance');
 
-    // ターミナルでこれが null にならないかチェック！
     console.log(`[受信データ] 商品: ${itemName}, 入力値: ${newBalanceRaw}`);
 
     if (!itemName || newBalanceRaw === null) {
       ctx.response.status = 400;
-      ctx.response.body = 'Missing data: ' + (itemName ? '' : 'item_id ') + (newBalanceRaw ? '' : 'balance');
+      ctx.response.body = 'Missing data';
       return;
     }
 
@@ -53,6 +50,7 @@ async function handleInventoryUpdate(ctx: Context) {
     ctx.response.body = 'Internal Server Error';
   }
 }
+
 // B. 発注ページ表示 (GET /order)
 async function renderOrderPage(ctx: Context) {
   const result = await dbClient.execute(
@@ -71,13 +69,10 @@ async function renderOrderPage(ctx: Context) {
   const inventoryRows = (result ? result.rows : []) as InventoryItem[];
 
   let tableRowsHtml = '';
-  // server.ts の renderOrderPage 内のループ処理を修正
   for (const item of inventoryRows) {
     const name = item['商品名'];
     const stock = item['残量'];
-    const suggested = item['提案発注量']; // 常にこれを使う
-
-    // 【修正】リロード時は DB の値ではなく常に '--:--' を表示させる
+    const suggested = item['提案発注量'];
     const timeStr = '--:--';
 
     tableRowsHtml += `
@@ -86,10 +81,8 @@ async function renderOrderPage(ctx: Context) {
         <td>${stock}</td>
         <td class="suggested-cell">${suggested}</td>
         <td>
-          <input type="number" 
-            name="balance" 
-            class="order-input unconfirmed" 
-            value="${suggested}"> </td>
+          <input type="number" name="balance" class="order-input unconfirmed" value="${suggested}">
+        </td>
         <td class="last-updated">${timeStr}</td>
         <td>
           <button type="submit" value="${name}" class="update-btn">更新</button>
@@ -98,47 +91,89 @@ async function renderOrderPage(ctx: Context) {
     `;
   }
 
-  // server.ts の renderOrderPage の最後の方
   let html = await Deno.readTextFile('./order.html');
-
-  // 【修正】正規表現を使い、<tbody>の中身が空でも、改行があっても確実に置換します
+  // tbodyタグを中身ごと置換
   html = html.replace(/<tbody id="order-body">[\s\S]*?<\/tbody>/, `<tbody id="order-body">${tableRowsHtml}</tbody>`);
 
   ctx.response.body = html;
   ctx.response.type = 'text/html';
 }
 
-// --- 3. ルーター設定 ---
+// C. 分析ページ表示 (GET /analysis)
+async function renderAnalysisPage(ctx: Context) {
+  try {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowStr = tomorrow.toISOString().split('T')[0];
+
+    // 予約データの取得
+    const resResult = await dbClient.execute(
+      `SELECT SUM(adult_count) as adults, SUM(children_count) as kids 
+      FROM reservations WHERE reservation_date = $1`,
+      [tomorrowStr]
+    );
+    const stats = (resResult.rows[0] as any) || { adults: 0, kids: 0 };
+
+    // 商品特性データの取得
+    const invResult = await dbClient.execute(`SELECT "商品名", family_score, solo_score FROM inventory`);
+    const chartData = invResult.rows;
+
+    const template = await Deno.readTextFile('./analysis.html');
+
+    const processedHtml = template
+      .replace(/{{tomorrow}}/g, tomorrowStr)
+      .replace(/{{adults}}/g, String(stats.adults || 0))
+      .replace(/{{kids}}/g, String(stats.kids || 0))
+      .replace(/{{chartData}}/g, JSON.stringify(chartData));
+
+    // ★これを忘れないでください！
+    ctx.response.body = processedHtml;
+    ctx.response.type = 'text/html';
+  } catch (err) {
+    console.error('Analysis Page Error:', err);
+    ctx.response.status = 500;
+    ctx.response.body = 'Internal Server Error';
+  }
+}
+
+// --- ルーター設定 ---
 const router = new Router();
 
+router.get('/analysis', renderAnalysisPage);
+router.get('/order', renderOrderPage);
+router.get('/inventory', async (ctx) => {
+  const html = await Deno.readTextFile('./inventory.html');
+  ctx.response.body = html;
+  ctx.response.type = 'text/html';
+});
 router.get('/', async (ctx) => {
   const html = await Deno.readTextFile('./index.html');
   ctx.response.body = html;
   ctx.response.type = 'text/html';
 });
 
-router.get('/order', renderOrderPage);
-
-router.get('/inventory', async (ctx) => {
-  const html = await Deno.readTextFile('./inventory.html');
-  ctx.response.body = html;
-  ctx.response.type = 'text/html';
-});
-
 router.post('/api/inventory-update', handleInventoryUpdate);
 
-// --- 4. アプリ起動設定 ---
+// --- アプリ起動 ---
 const app = new Application();
 app.use(router.routes());
 app.use(router.allowedMethods());
 
-app.use(async (ctx) => {
+// server.ts の最後の方にある app.use を修正
+app.use(async (ctx, next) => {
+  // もし登録済みのルート（/analysis や /order）なら、ファイルを直接送る処理をスキップする
+  const paths = ['/analysis', '/order', '/inventory', '/'];
+  if (paths.includes(ctx.request.url.pathname)) {
+    await next();
+    return;
+  }
+
   try {
     await send(ctx, ctx.request.url.pathname, {
       root: `${Deno.cwd()}`
     });
   } catch {
-    // ファイルがない場合は無視
+    await next();
   }
 });
 
