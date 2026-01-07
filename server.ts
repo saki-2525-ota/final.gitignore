@@ -134,7 +134,7 @@ async function renderAnalysisPage(ctx: Context) {
   }
 }
 
-// --- ルーター設定 ---
+//  ルーター設定
 const router = new Router();
 
 router.get('/analysis', renderAnalysisPage);
