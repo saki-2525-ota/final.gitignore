@@ -3,9 +3,9 @@ import { Application, Router, send, Context } from 'https://deno.land/x/oak@v14.
 
 // --- 1. データベース設定 ---
 const config = {
-  hostname: 'db.fcxkkifntnubfxmnakpi.supabase.co',
-  port: 5432,
-  user: 'postgres',
+  hostname: 'aws-1-ap-northeast-2.pooler.supabase.com',
+  port: 6543,
+  user: 'postgres.fcxkkifntnubfxmnakpi',
   database: 'postgres',
   password: 'password0711',
   tls: {
