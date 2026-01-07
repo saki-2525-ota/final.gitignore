@@ -92,7 +92,6 @@ async function renderOrderPage(ctx: Context) {
   }
 
   let html = await Deno.readTextFile('./order.html');
-  // tbodyタグを中身ごと置換
   html = html.replace(/<tbody id="order-body">[\s\S]*?<\/tbody>/, `<tbody id="order-body">${tableRowsHtml}</tbody>`);
 
   ctx.response.body = html;
@@ -126,7 +125,6 @@ async function renderAnalysisPage(ctx: Context) {
       .replace(/{{kids}}/g, String(stats.kids || 0))
       .replace(/{{chartData}}/g, JSON.stringify(chartData));
 
-    // ★これを忘れないでください！
     ctx.response.body = processedHtml;
     ctx.response.type = 'text/html';
   } catch (err) {
@@ -159,9 +157,7 @@ const app = new Application();
 app.use(router.routes());
 app.use(router.allowedMethods());
 
-// server.ts の最後の方にある app.use を修正
 app.use(async (ctx, next) => {
-  // もし登録済みのルート（/analysis や /order）なら、ファイルを直接送る処理をスキップする
   const paths = ['/analysis', '/order', '/inventory', '/'];
   if (paths.includes(ctx.request.url.pathname)) {
     await next();
