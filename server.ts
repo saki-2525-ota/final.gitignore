@@ -24,15 +24,45 @@ router.get('/', (ctx) => serveHtml(ctx, './index.html'));
 router.get('/analysis', (ctx) => serveHtml(ctx, './analysis.html'));
 router.get('/order', (ctx) => serveHtml(ctx, './order.html'));
 
-// --- 【重要】発注ページ用のデータ取得API ---
+// --- データ取得API ---
 router.get('/api/inventory', async (ctx) => {
   try {
     const result = await dbClient.execute(`SELECT "商品名", "残量", "提案発注量" FROM inventory ORDER BY id ASC`);
     ctx.response.type = 'application/json; charset=utf-8';
     ctx.response.body = result.rows;
   } catch (err) {
-    console.error('DB Error:', err);
     ctx.response.status = 500;
+  }
+});
+
+router.post('/api/inventory-update', async (ctx) => {
+  try {
+    const params = await ctx.request.body.form();
+
+    const itemId = params.get('item_id');
+    const balance = params.get('balance');
+    const lastInputter = params.get('last_inputter');
+
+    console.log(`更新リクエスト: ${itemId}, 残量: ${balance}, 担当: ${lastInputter}`);
+
+    if (!itemId) {
+      ctx.response.status = 400;
+      ctx.response.body = { error: '商品名が指定されていません' };
+      return;
+    }
+
+    await dbClient.execute(`UPDATE inventory SET "残量" = $1, last_inputter = $2 WHERE "商品名" = $3`, [
+      balance,
+      lastInputter,
+      itemId
+    ]);
+
+    ctx.response.status = 200;
+    ctx.response.body = { message: 'OK' };
+  } catch (err) {
+    console.error('Update Error:', err);
+    ctx.response.status = 500;
+    ctx.response.body = { error: 'Failed to update' };
   }
 });
 
