@@ -12,36 +12,29 @@ const config = {
 };
 const dbClient = new Client(config);
 
-// --- 2. 各ページの処理 ---
+// --- 2. ページ処理用関数 ---
 
-// [発注ページ] データを注入して表示
+// 発注ページ（動的データ注入）
 async function renderOrderPage(ctx: Context) {
   try {
     const result = await dbClient.execute('SELECT "商品名", "残量", "提案発注量" FROM inventory ORDER BY id ASC');
     const rows = (result ? result.rows : []) as any[];
     let tableRowsHtml = '';
     for (const item of rows) {
-      tableRowsHtml += `
-        <tr>
-          <td>${item['商品名']}</td>
-          <td>${item['残量']}</td>
-          <td class="suggested-cell">${item['提案発注量']}</td>
-          <td><input type="number" name="balance" class="order-input" value="${item['提案発注量']}"></td>
-          <td class="last-updated">--:--</td>
-          <td><button type="submit" value="${item['商品名']}" class="update-btn">更新</button></td>
-        </tr>`;
+      tableRowsHtml += `<tr><td>${item['商品名']}</td><td>${item['残量']}</td><td>${item['提案発注量']}</td><td><input type="number" name="balance" class="order-input" value="${item['提案発注量']}"></td><td class="last-updated">--:--</td><td><button type="submit" value="${item['商品名']}" class="update-btn">更新</button></td></tr>`;
     }
     let html = await Deno.readTextFile('./order.html');
     html = html.replace(/<tbody id="order-body">[\s\S]*?<\/tbody>/, `<tbody id="order-body">${tableRowsHtml}</tbody>`);
     ctx.response.body = html;
     ctx.response.type = 'text/html';
   } catch (err) {
+    console.error('Order Page Error:', err);
     ctx.response.status = 500;
-    ctx.response.body = 'Order page error';
+    ctx.response.body = 'Order Page Error';
   }
 }
 
-// [分析データAPI]
+// 分析データAPI
 async function handleAnalysisData(ctx: Context) {
   try {
     const now = new Date();
@@ -66,7 +59,7 @@ async function handleAnalysisData(ctx: Context) {
   }
 }
 
-// --- 3. ルーター設定（ここで全てのURLを登録する） ---
+// --- 3. ルーター設定 ---
 const router = new Router();
 
 // トップページ
@@ -75,71 +68,60 @@ router.get('/', async (ctx) => {
   ctx.response.type = 'text/html';
 });
 
-// 発注ページ
-router.get('/order', renderOrderPage);
-router.get('/order.html', renderOrderPage);
+// 各HTMLページへの対応（URLの打ち間違いやボタンの./ありなし両方に対応）
+const pages = ['inventory.html', 'reservations.html', 'analysis.html', 'order.html'];
+pages.forEach((page) => {
+  router.get(`/${page}`, async (ctx) => {
+    if (page === 'order.html') return renderOrderPage(ctx); // 発注だけは特別処理
+    try {
+      ctx.response.body = await Deno.readTextFile(`./${page}`);
+      ctx.response.type = 'text/html';
+    } catch {
+      ctx.response.status = 404;
+      ctx.response.body = `${page} が見つかりません。GitHubにファイルがあるか確認してください。`;
+    }
+  });
+});
 
-// 分析ページ
+// HTML拡張子なしのURLにも対応
 router.get('/analysis', async (ctx) => {
   ctx.response.body = await Deno.readTextFile('./analysis.html');
   ctx.response.type = 'text/html';
 });
-router.get('/analysis.html', async (ctx) => {
-  ctx.response.body = await Deno.readTextFile('./analysis.html');
-  ctx.response.type = 'text/html';
-});
+router.get('/order', renderOrderPage);
 
-// ★追加：在庫一覧ページ (ファイルがある場合)
-router.get('/inventory.html', async (ctx) => {
-  try {
-    ctx.response.body = await Deno.readTextFile('./inventory.html');
-    ctx.response.type = 'text/html';
-  } catch {
-    ctx.response.status = 404;
-    ctx.response.body = 'inventory.html が見つかりません';
-  }
-});
-
-// ★追加：予約ページ (ファイルがある場合)
-router.get('/reservations.html', async (ctx) => {
-  try {
-    ctx.response.body = await Deno.readTextFile('./reservations.html');
-    ctx.response.type = 'text/html';
-  } catch {
-    ctx.response.status = 404;
-    ctx.response.body = 'reservations.html が見つかりません';
-  }
-});
-
-// API関連
+// API
 router.get('/api/analysis-data', handleAnalysisData);
 router.post('/api/inventory-update', async (ctx) => {
   const body = ctx.request.body;
   const val = await body.form();
-  const itemName = val.get('item_id');
-  const newBalance = val.get('balance');
-  await dbClient.execute(`UPDATE inventory SET "残量" = $1 WHERE "商品名" = $2`, [Number(newBalance), itemName]);
+  await dbClient.execute(`UPDATE inventory SET "残量" = $1 WHERE "商品名" = $2`, [
+    Number(val.get('balance')),
+    val.get('item_id')
+  ]);
   ctx.response.body = { ok: true };
 });
 
-// --- 4. アプリ起動と静的ファイル対策 ---
+// --- 4. 最終防衛策（静的ファイル用） ---
 const app = new Application();
 app.use(router.routes());
 app.use(router.allowedMethods());
 
-// CSS/JS/HTMLファイルを直接読み込むための汎用設定
 app.use(async (ctx) => {
   const path = ctx.request.url.pathname;
+  console.log(`[アクセス試行]: ${path}`);
   try {
     const content = await Deno.readFile(`.${path}`);
     if (path.endsWith('.css')) ctx.response.type = 'text/css';
     else if (path.endsWith('.js')) ctx.response.type = 'application/javascript';
     else if (path.endsWith('.html')) ctx.response.type = 'text/html';
     ctx.response.body = content;
-  } catch {
-    // ファイルがない場合は無視して404
+  } catch (e) {
+    console.log(`[ファイル読み込み失敗]: ${path}`);
+    ctx.response.status = 404;
+    ctx.response.body = '404 Not Found - ファイルが見つかりません';
   }
 });
 
-console.log('Server is running!');
+console.log('Server is running on http://localhost:8000/');
 await app.listen({ port: 8000 });
