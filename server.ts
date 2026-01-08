@@ -24,7 +24,7 @@ router.get('/', (ctx) => serveHtml(ctx, './index.html'));
 router.get('/analysis', (ctx) => serveHtml(ctx, './analysis.html'));
 router.get('/order', (ctx) => serveHtml(ctx, './order.html'));
 
-// --- データ取得API ---
+// --- 在庫一覧取得API ---
 router.get('/api/inventory', async (ctx) => {
   try {
     const result = await dbClient.execute(`SELECT "商品名", "残量", "提案発注量" FROM inventory ORDER BY id ASC`);
@@ -35,22 +35,19 @@ router.get('/api/inventory', async (ctx) => {
   }
 });
 
+// --- 在庫更新API (Oak v14 修正版) ---
 router.post('/api/inventory-update', async (ctx) => {
   try {
+    // Oak v14 では .body() は関数ではないため () をつけずに .form() を呼び出します
     const params = await ctx.request.body.form();
 
-    const itemId = params.get('item_id');
-    const balance = params.get('balance');
-    const lastInputter = params.get('last_inputter');
+    const itemId = params.get('item_id'); // 商品名
+    const balance = params.get('balance'); // 入力された数値
+    const lastInputter = params.get('last_inputter'); // 担当者名
 
-    console.log(`更新リクエスト: ${itemId}, 残量: ${balance}, 担当: ${lastInputter}`);
+    console.log(`更新リクエスト受信: ${itemId}, 残量: ${balance}, 担当: ${lastInputter}`);
 
-    if (!itemId) {
-      ctx.response.status = 400;
-      ctx.response.body = { error: '商品名が指定されていません' };
-      return;
-    }
-
+    // Supabaseへの更新クエリ（カラム名をダブルクォーテーションで囲む）
     await dbClient.execute(`UPDATE inventory SET "残量" = $1, last_inputter = $2 WHERE "商品名" = $3`, [
       balance,
       lastInputter,
@@ -58,15 +55,15 @@ router.post('/api/inventory-update', async (ctx) => {
     ]);
 
     ctx.response.status = 200;
-    ctx.response.body = { message: 'OK' };
+    ctx.response.body = { status: 'success' };
   } catch (err) {
     console.error('Update Error:', err);
     ctx.response.status = 500;
-    ctx.response.body = { error: 'Failed to update' };
+    ctx.response.body = { status: 'error', message: String(err) };
   }
 });
 
-// グラフ・予約用API
+// グラフ用API
 router.get('/api/analysis-data', async (ctx) => {
   try {
     const now = new Date();
