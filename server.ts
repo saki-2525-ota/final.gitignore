@@ -1,65 +1,32 @@
 import { Client } from './db/client.ts';
-import { Application, Router, send, Context } from 'https://deno.land/x/oak@v14.0.0/mod.ts';
+import { Application, Router, Context } from 'https://deno.land/x/oak@v14.0.0/mod.ts';
 
+// --- 1. データベース設定 ---
 const config = {
   hostname: 'aws-1-ap-northeast-2.pooler.supabase.com',
   port: 6543,
   user: 'postgres.fcxkkifntnubfxmnakpi',
   database: 'postgres',
   password: 'password0711',
-  tls: {
-    enabled: true,
-    caCertificates: []
-  }
+  tls: { enabled: true, caCertificates: [] }
 };
 
 const dbClient = new Client(config);
 
-async function handleInventoryUpdate(ctx: Context) {
-  try {
-    const body = ctx.request.body;
-    const val = await body.form();
-    const itemName = val.get('item_id');
-    const newBalanceRaw = val.get('balance');
-
-    if (!itemName || newBalanceRaw === null) {
-      ctx.response.status = 400;
-      ctx.response.body = 'Missing data';
-      return;
-    }
-
-    const newBalance = Number(newBalanceRaw);
-    const serverTimestamp = new Date().toISOString();
-
-    await dbClient.execute(`UPDATE inventory SET "残量" = $1, "発注量" = $1, last_updated = $2 WHERE "商品名" = $3`, [
-      newBalance,
-      serverTimestamp,
-      itemName
-    ]);
-
-    ctx.response.status = 200;
-    ctx.response.body = { ok: true };
-  } catch (err) {
-    console.error('サーバーエラー:', err);
-    ctx.response.status = 500;
-    ctx.response.body = 'Internal Server Error';
-  }
-}
-
+// --- 2. データをHTMLに入れ込む関数 ---
 async function renderOrderPage(ctx: Context) {
   try {
+    console.log('--- 発注ページを作成中 ---');
+
+    // Supabaseからデータ取得 (スコアは取得するが表示はしない)
     const result = await dbClient.execute(
-      'SELECT id, "商品名", "残量", "最大保持量", "提案発注量", "発注量", family_score, solo_score, last_updated FROM inventory ORDER BY id ASC'
+      'SELECT "商品名", "残量", "提案発注量", family_score, solo_score FROM inventory ORDER BY id ASC'
     );
-
-    const inventoryRows = (result ? result.rows : []) as any[];
-
-    if (inventoryRows.length === 0) {
-      console.log('⚠️ Supabaseからデータが1件も取得できていません');
-    }
+    const rows = (result ? result.rows : []) as any[];
+    console.log(`取得データ数: ${rows.length}件`);
 
     let tableRowsHtml = '';
-    for (const item of inventoryRows) {
+    for (const item of rows) {
       tableRowsHtml += `
         <tr>
           <td>${item['商品名']}</td>
@@ -72,92 +39,71 @@ async function renderOrderPage(ctx: Context) {
           <td>
             <button type="submit" value="${item['商品名']}" class="update-btn">更新</button>
           </td>
-        </tr>
-      `;
+        </tr>`;
     }
 
+    // HTMLファイルを読み込む
     let html = await Deno.readTextFile('./order.html');
-    html = html.replace('<tbody id="order-body"></tbody>', `<tbody id="order-body">${tableRowsHtml}</tbody>`);
+
+    // 【重要】tbodyの中身を確実に置き換える（スペースがあっても大丈夫なように正規表現を使用）
+    html = html.replace(/<tbody id="order-body">[\s\S]*?<\/tbody>/, `<tbody id="order-body">${tableRowsHtml}</tbody>`);
 
     ctx.response.body = html;
     ctx.response.type = 'text/html';
   } catch (err) {
-    console.error('❌ エラー発生:', err);
+    console.error('❌ ページ作成エラー:', err);
     ctx.response.status = 500;
-    ctx.response.body = 'Error rendering order page';
+    ctx.response.body = 'サーバーエラーが発生しました';
   }
 }
 
-async function handleAnalysisData(ctx: Context) {
-  try {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowStr = tomorrow.toISOString().split('T')[0];
-
-    const resResult = await dbClient.execute(
-      `SELECT SUM(adult_count) as adults, SUM(children_count) as kids 
-       FROM reservations WHERE reservation_date = $1`,
-      [tomorrowStr]
-    );
-    const stats = (resResult.rows[0] as any) || { adults: 0, kids: 0 };
-    const invResult = await dbClient.execute(`SELECT "商品名", family_score, solo_score FROM inventory`);
-
-    ctx.response.body = {
-      tomorrow: tomorrowStr,
-      adults: stats.adults || 0,
-      kids: stats.kids || 0,
-      chartData: invResult.rows
-    };
-  } catch (err) {
-    ctx.response.status = 500;
-    ctx.response.body = { error: 'Internal Server Error' };
-  }
-}
-
+// --- 3. ルーティング設定 ---
 const router = new Router();
 
-router.get('/', async (ctx: Context) => {
+// /order でも /order.html でも同じ関数（データ注入版）を呼ぶようにする
+router.get('/order', renderOrderPage);
+router.get('/order.html', renderOrderPage);
+
+router.get('/', async (ctx) => {
   const html = await Deno.readTextFile('./index.html');
   ctx.response.body = html;
   ctx.response.type = 'text/html';
 });
 
-router.get('/order', renderOrderPage);
-router.get('/order.html', renderOrderPage);
-
-router.get('/analysis', async (ctx: Context) => {
+// 分析ページ用
+router.get('/analysis', async (ctx) => {
   const html = await Deno.readTextFile('./analysis.html');
   ctx.response.body = html;
   ctx.response.type = 'text/html';
 });
 
-router.get('/api/analysis-data', handleAnalysisData);
-router.post('/api/inventory-update', handleInventoryUpdate);
-
-const app = new Application();
-
-app.use(async (ctx: Context, next) => {
-  ctx.response.headers.set('Access-Control-Allow-Origin', '*');
-  ctx.response.headers.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  ctx.response.headers.set('Access-Control-Allow-Headers', 'Content-Type');
-  if (ctx.request.method === 'OPTIONS') {
-    ctx.response.status = 204;
-    return;
-  }
-  await next();
+// API
+router.post('/api/inventory-update', async (ctx) => {
+  // 既存の更新処理...
+  const body = ctx.request.body;
+  const val = await body.form();
+  const itemName = val.get('item_id');
+  const newBalance = val.get('balance');
+  await dbClient.execute(`UPDATE inventory SET "残量" = $1 WHERE "商品名" = $2`, [Number(newBalance), itemName]);
+  ctx.response.body = { ok: true };
 });
 
+// --- 4. アプリ起動と静的ファイル対策 ---
+const app = new Application();
 app.use(router.routes());
 app.use(router.allowedMethods());
 
-app.use(async (ctx: Context) => {
-  try {
-    await send(ctx, ctx.request.url.pathname, {
-      root: Deno.cwd(),
-      index: 'index.html'
-    });
-  } catch {
-    // ファイルが見つからない場合は何もしない
+// CSSやJSファイルを読み込むための設定（sendを使わない方法）
+app.use(async (ctx) => {
+  const path = ctx.request.url.pathname;
+  if (path.endsWith('.css') || path.endsWith('.js')) {
+    try {
+      const content = await Deno.readFile(`.${path}`);
+      ctx.response.body = content;
+      ctx.response.type = path.endsWith('.css') ? 'text/css' : 'application/javascript';
+    } catch {
+      ctx.response.status = 404;
+    }
   }
 });
 
