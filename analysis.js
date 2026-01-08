@@ -1,28 +1,24 @@
 async function initAnalysis() {
   try {
+    // データの取得
     const response = await fetch('/api/analysis-data');
-    if (!response.ok) throw new Error('データ取得失敗');
-
+    if (!response.ok) throw new Error('データ取得に失敗しました');
     const data = await response.json();
-    console.log('受信データ:', data);
 
+    // 1. 予約状況の表示
     document.getElementById('tomorrow-date').textContent = data.tomorrow || '---';
     document.getElementById('adult-count').textContent = data.adults || 0;
     document.getElementById('kids-count').textContent = data.kids || 0;
 
+    // 2. グラフの表示
     if (!data.chartData || data.chartData.length === 0) {
-      console.warn('表示する商品データがありません。DBを確認してください。');
+      console.warn('グラフに表示する商品データがありません');
       return;
     }
 
-    const labels = data.chartData.map((d) => d['商品名']);
-    const familyScores = data.chartData.map((d) => d.family_score ?? 5);
-    const soloScores = data.chartData.map((d) => d.solo_score ?? 5);
+    const ctx = document.getElementById('radarChart').getContext('2d');
 
-    const canvas = document.getElementById('radarChart');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-
+    // 既存のグラフがあれば破棄
     if (window.myRadarChart) {
       window.myRadarChart.destroy();
     }
@@ -30,18 +26,18 @@ async function initAnalysis() {
     window.myRadarChart = new Chart(ctx, {
       type: 'radar',
       data: {
-        labels: labels,
+        labels: data.chartData.map((d) => d['商品名']),
         datasets: [
           {
             label: 'ファミリー人気度',
-            data: familyScores,
+            data: data.chartData.map((d) => d.family_score ?? 5),
             backgroundColor: 'rgba(255, 153, 51, 0.2)',
             borderColor: '#ff9933',
             borderWidth: 2
           },
           {
             label: 'お一人様人気度',
-            data: soloScores,
+            data: data.chartData.map((d) => d.solo_score ?? 5),
             backgroundColor: 'rgba(54, 162, 235, 0.2)',
             borderColor: 'rgb(54, 162, 235)',
             borderWidth: 2
@@ -59,7 +55,7 @@ async function initAnalysis() {
       }
     });
   } catch (err) {
-    console.error('グラフ表示エラー:', err);
+    console.error('分析画面の読み込みエラー:', err);
   }
 }
 

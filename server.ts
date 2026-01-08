@@ -8,13 +8,13 @@ const config = {
   user: 'postgres.fcxkkifntnubfxmnakpi',
   database: 'postgres',
   password: 'password0711',
-  tls: { enabled: true, caCertificates: [] }
+  tls: { enabled: false } // TLSエラーを回避するため一旦 false に設定
 };
 const dbClient = new Client(config);
 
-// --- 2. ページ処理用関数 ---
+// --- 2. 処理関数 ---
 
-// 発注ページ用
+// 【発注ページ】
 async function renderOrderPage(ctx: Context) {
   try {
     const result = await dbClient.execute('SELECT "商品名", "残量", "提案発注量" FROM inventory ORDER BY id ASC');
@@ -33,26 +33,20 @@ async function renderOrderPage(ctx: Context) {
   }
 }
 
-// ★【重要】分析データ取得API
+// 【分析データAPI】
 async function handleAnalysisData(ctx: Context) {
   try {
-    // 1. 日本時間の明日を計算
     const now = new Date();
     const tomorrow = new Date(now.getTime() + 9 * 60 * 60 * 1000 + 24 * 60 * 60 * 1000);
     const tomorrowStr = tomorrow.toISOString().split('T')[0];
 
-    // 2. 予約人数を取得 (reservationsテーブルから)
     const resResult = await dbClient.execute(
       `SELECT SUM(adult_count) as adults, SUM(children_count) as kids FROM reservations WHERE reservation_date = $1`,
       [tomorrowStr]
     );
     const stats = (resResult.rows[0] as any) || { adults: 0, kids: 0 };
 
-    // 3. 商品スコアを取得 (inventoryテーブルから)
-    // family_score または solo_score が設定されている商品だけをグラフに出す
-    const invResult = await dbClient.execute(
-      `SELECT "商品名", family_score, solo_score FROM inventory WHERE family_score IS NOT NULL OR solo_score IS NOT NULL`
-    );
+    const invResult = await dbClient.execute(`SELECT "商品名", family_score, solo_score FROM inventory`);
 
     ctx.response.body = {
       tomorrow: tomorrowStr,
@@ -62,9 +56,25 @@ async function handleAnalysisData(ctx: Context) {
     };
     ctx.response.type = 'application/json';
   } catch (err) {
-    console.error('API Error:', err);
     ctx.response.status = 500;
     ctx.response.body = { error: 'API Error' };
+  }
+}
+
+// 【予約一覧API】 ★ログの「ファイル読み込み失敗」を解決
+async function handleReservations(ctx: Context) {
+  try {
+    const now = new Date();
+    const tomorrow = new Date(now.getTime() + 9 * 60 * 60 * 1000 + 24 * 60 * 60 * 1000);
+    const tomorrowStr = tomorrow.toISOString().split('T')[0];
+    const result = await dbClient.execute(`SELECT * FROM reservations WHERE reservation_date = $1 ORDER BY id ASC`, [
+      tomorrowStr
+    ]);
+    ctx.response.body = result.rows || [];
+    ctx.response.type = 'application/json';
+  } catch (err) {
+    ctx.response.status = 500;
+    ctx.response.body = { error: 'Failed to fetch reservations' };
   }
 }
 
@@ -76,14 +86,9 @@ router.get('/', async (ctx) => {
   ctx.response.type = 'text/html';
 });
 
-// 各HTMLページ
 router.get('/order', renderOrderPage);
 router.get('/analysis', async (ctx) => {
   ctx.response.body = await Deno.readTextFile('./analysis.html');
-  ctx.response.type = 'text/html';
-});
-router.get('/inventory.html', async (ctx) => {
-  ctx.response.body = await Deno.readTextFile('./inventory.html');
   ctx.response.type = 'text/html';
 });
 router.get('/reservations.html', async (ctx) => {
@@ -93,6 +98,7 @@ router.get('/reservations.html', async (ctx) => {
 
 // API
 router.get('/api/analysis-data', handleAnalysisData);
+router.get('/api/reservations', handleReservations); // ★ここを追加
 router.post('/api/inventory-update', async (ctx) => {
   const body = ctx.request.body;
   const val = await body.form();
@@ -108,6 +114,7 @@ const app = new Application();
 app.use(router.routes());
 app.use(router.allowedMethods());
 
+// 静的ファイル（CSS/JS）を返す
 app.use(async (ctx) => {
   const path = ctx.request.url.pathname;
   try {
@@ -116,9 +123,10 @@ app.use(async (ctx) => {
     else if (path.endsWith('.js')) ctx.response.type = 'application/javascript';
     ctx.response.body = content;
   } catch {
-    // 404
+    ctx.response.status = 404;
+    ctx.response.body = 'File Not Found';
   }
 });
 
-console.log('Server is running!');
+console.log('Server is running on http://localhost:8000/');
 await app.listen({ port: 8000 });
