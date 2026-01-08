@@ -12,7 +12,7 @@ const config = {
 const dbClient = new Client(config);
 const router = new Router();
 
-// --- ページ表示 (UTF-8強制) ---
+// --- ページ表示 ---
 const serveHtml = async (ctx: any, fileName: string) => {
   const content = await Deno.readTextFile(fileName);
   ctx.response.status = 200;
@@ -24,26 +24,32 @@ router.get('/', (ctx) => serveHtml(ctx, './index.html'));
 router.get('/analysis', (ctx) => serveHtml(ctx, './analysis.html'));
 router.get('/order', (ctx) => serveHtml(ctx, './order.html'));
 
-// --- データAPI (これがグラフと予約状況の命です) ---
+// --- 【重要】発注ページ用のデータ取得API ---
+router.get('/api/inventory', async (ctx) => {
+  try {
+    const result = await dbClient.execute(`SELECT "商品名", "残量", "提案発注量" FROM inventory ORDER BY id ASC`);
+    ctx.response.type = 'application/json; charset=utf-8';
+    ctx.response.body = result.rows;
+  } catch (err) {
+    console.error('DB Error:', err);
+    ctx.response.status = 500;
+  }
+});
+
+// グラフ・予約用API
 router.get('/api/analysis-data', async (ctx) => {
   try {
     const now = new Date();
-    // 日本時間の明日
     const tomorrow = new Date(now.getTime() + 9 * 60 * 60 * 1000 + 24 * 60 * 60 * 1000);
     const tomorrowStr = tomorrow.toISOString().split('T')[0];
-
-    // 予約データ
     const resResult = await dbClient.execute(
       `SELECT SUM(adult_count) as adults, SUM(children_count) as kids FROM reservations WHERE reservation_date = $1`,
       [tomorrowStr]
     );
     const stats = (resResult.rows[0] as any) || { adults: 0, kids: 0 };
-
-    // 在庫データ
     const invResult = await dbClient.execute(
       `SELECT "商品名", "残量", "提案発注量", COALESCE(family_score, 5) as family_score, COALESCE(solo_score, 5) as solo_score FROM inventory ORDER BY id ASC`
     );
-
     ctx.response.type = 'application/json; charset=utf-8';
     ctx.response.body = {
       tomorrow: tomorrowStr,
@@ -52,7 +58,6 @@ router.get('/api/analysis-data', async (ctx) => {
       chartData: invResult.rows
     };
   } catch (err) {
-    console.error('API Error:', err);
     ctx.response.status = 500;
   }
 });
@@ -61,7 +66,6 @@ const app = new Application();
 app.use(router.routes());
 app.use(router.allowedMethods());
 
-// 静的ファイル処理
 app.use(async (ctx) => {
   const path = ctx.request.url.pathname;
   try {
