@@ -1,17 +1,20 @@
 async function initAnalysis() {
-  console.log('分析開始...');
   try {
     const response = await fetch('/api/analysis-data');
-    if (!response.ok) throw new Error('APIに接続できません');
+    if (!response.ok) throw new Error('データ取得に失敗しました');
     const data = await response.json();
-    console.log('受信データ:', data);
 
-    // 数値の表示
-    document.getElementById('tomorrow-date').textContent = data.tomorrow;
-    document.getElementById('adult-count').textContent = data.adults;
-    document.getElementById('kids-count').textContent = data.kids;
+    // 1. 予約人数の更新
+    document.getElementById('tomorrow-date').textContent = data.tomorrow || '---';
+    document.getElementById('adult-count').textContent = data.adults || 0;
+    document.getElementById('kids-count').textContent = data.kids || 0;
 
-    // グラフの準備
+    // 2. グラフ描画
+    if (!data.chartData || data.chartData.length === 0) {
+      console.error('グラフ用のデータが空です');
+      return;
+    }
+
     const ctx = document.getElementById('radarChart').getContext('2d');
     if (window.myRadarChart) window.myRadarChart.destroy();
 
@@ -24,22 +27,26 @@ async function initAnalysis() {
             label: 'ファミリー人気度',
             data: data.chartData.map((d) => d.family_score),
             backgroundColor: 'rgba(255, 153, 51, 0.4)',
-            borderColor: '#ff9933'
+            borderColor: '#ff9933',
+            fill: true
           },
           {
             label: 'お一人様人気度',
             data: data.chartData.map((d) => d.solo_score),
             backgroundColor: 'rgba(54, 162, 235, 0.4)',
-            borderColor: 'rgb(54, 162, 235)'
+            borderColor: 'rgb(54, 162, 235)',
+            fill: true
           }
         ]
       },
       options: {
+        responsive: true,
+        maintainAspectRatio: false,
         scales: { r: { suggestedMin: 0, suggestedMax: 10 } }
       }
     });
   } catch (err) {
-    console.error('エラー:', err);
+    console.error('Analysis Error:', err);
   }
 }
 document.addEventListener('DOMContentLoaded', initAnalysis);
