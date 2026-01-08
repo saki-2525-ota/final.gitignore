@@ -3,7 +3,6 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="stylesheet" href="style.css" />
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <title>在庫分析</title>
   </head>
   <body>
@@ -23,8 +22,29 @@
       </div>
 
       <div class="chart-container">
-        <h3>商品別特性（ファミリー vs お一人様）</h3>
-        <canvas id="radarChart"></canvas>
+        <h3>客層別・出やすい商品</h3>
+
+        <div class="analysis-results">
+          <div class="pref-box family">
+            <h4>ファミリー層に多い傾向</h4>
+            <p>
+              <strong>フライドポテト</strong>、<strong>コーラ</strong>、<strong>オレンジジュース</strong>、
+              <strong>カルピス</strong>、<strong>トマト</strong>、<strong>鶏むね肉</strong>、
+              <strong>つくね</strong>、<strong>ねぎま</strong>、<strong>かわ</strong> が出やすい傾向にあります。
+            </p>
+          </div>
+
+          <hr />
+
+          <div class="pref-box solo">
+            <h4>お一人様に多い傾向</h4>
+            <p>
+              <strong>はつ</strong>、<strong>ささみ</strong>、<strong>せせり</strong>、
+              <strong>ねぎま</strong>、<strong>生ビール樽</strong>、<strong>ハイボール</strong>、
+              <strong>ぼんじり</strong>、<strong>豆腐</strong> が出やすい傾向にあります。
+            </p>
+          </div>
+        </div>
       </div>
 
       <div class="nav-actions">
