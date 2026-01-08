@@ -54,6 +54,10 @@ async function renderOrderPage(ctx: Context) {
 
     const inventoryRows = (result ? result.rows : []) as any[];
 
+    if (inventoryRows.length === 0) {
+      console.log('⚠️ Supabaseからデータが1件も取得できていません');
+    }
+
     let tableRowsHtml = '';
     for (const item of inventoryRows) {
       tableRowsHtml += `
@@ -73,11 +77,12 @@ async function renderOrderPage(ctx: Context) {
     }
 
     let html = await Deno.readTextFile('./order.html');
-    html = html.replace(/<tbody id="order-body">[\s\S]*?<\/tbody>/, `<tbody id="order-body">${tableRowsHtml}</tbody>`);
+    html = html.replace('<tbody id="order-body"></tbody>', `<tbody id="order-body">${tableRowsHtml}</tbody>`);
 
     ctx.response.body = html;
     ctx.response.type = 'text/html';
   } catch (err) {
+    console.error('❌ エラー発生:', err);
     ctx.response.status = 500;
     ctx.response.body = 'Error rendering order page';
   }
@@ -118,6 +123,7 @@ router.get('/', async (ctx: Context) => {
 });
 
 router.get('/order', renderOrderPage);
+router.get('/order.html', renderOrderPage);
 
 router.get('/analysis', async (ctx: Context) => {
   const html = await Deno.readTextFile('./analysis.html');
