@@ -33,35 +33,50 @@
     </main>
 
     <script>
-      const jsonText = '{{chartData}}';
-      const rawData = JSON.parse(jsonText);
-      const ctx = document.getElementById('radarChart').getContext('2d');
+      const API_URL = 'https://final-git.saki-2525-ota.deno.net';
 
-      new Chart(ctx, {
-        type: 'radar',
-        data: {
-          labels: rawData.map((d) => d.商品名),
-          datasets: [
-            {
-              label: 'ファミリー人気度',
-              data: rawData.map((d) => d.family_score),
-              backgroundColor: 'rgba(255, 153, 51, 0.2)',
-              borderColor: '#ff9933',
-              pointBackgroundColor: '#ff9933'
+      async function initAnalysis() {
+        try {
+          // 1. Deno Deploy の API からデータを取得
+          const response = await fetch(`${API_URL}/api/analysis-data`);
+          const data = await response.json();
+
+          // 2. 画面上の数値を更新
+          document.getElementById('tomorrow-date').textContent = data.tomorrow;
+          document.getElementById('adult-count').textContent = data.adults;
+          document.getElementById('kids-count').textContent = data.kids;
+          const ctx = document.getElementById('radarChart').getContext('2d');
+
+          new Chart(ctx, {
+            type: 'radar',
+            data: {
+              labels: rawData.map((d) => d.商品名),
+              datasets: [
+                {
+                  label: 'ファミリー人気度',
+                  data: rawData.map((d) => d.family_score),
+                  backgroundColor: 'rgba(255, 153, 51, 0.2)',
+                  borderColor: '#ff9933',
+                  pointBackgroundColor: '#ff9933'
+                },
+                {
+                  label: 'お一人様人気度',
+                  data: rawData.map((d) => d.solo_score),
+                  backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                  borderColor: 'rgb(54, 162, 235)',
+                  pointBackgroundColor: 'rgb(54, 162, 235)'
+                }
+              ]
             },
-            {
-              label: 'お一人様人気度',
-              data: rawData.map((d) => d.solo_score),
-              backgroundColor: 'rgba(54, 162, 235, 0.2)',
-              borderColor: 'rgb(54, 162, 235)',
-              pointBackgroundColor: 'rgb(54, 162, 235)'
+            options: {
+              scales: { r: { suggestMin: 0, suggestMax: 10 } }
             }
-          ]
-        },
-        options: {
-          scales: { r: { suggestMin: 0, suggestMax: 10 } }
+          });
+        } catch (error) {
+          console.error('分析データの取得に失敗しました:', error);
         }
-      });
+      }
+      initAnalysis();
     </script>
   </body>
 </html>

@@ -1,3 +1,5 @@
+const API_URL = 'https://final-git.saki-2525-ota.deno.net';
+
 document.addEventListener('DOMContentLoaded', () => {
   const inventoryForm = document.getElementById('inventory-form');
   const inputterNameField = document.getElementById('inputter-name');
@@ -31,7 +33,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const now = new Date();
     timeCell.textContent = now.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
 
-    // order.js の fetch 部分を以下に書き換え
     try {
       // 送るデータを準備
       const params = new URLSearchParams();
@@ -39,9 +40,8 @@ document.addEventListener('DOMContentLoaded', () => {
       params.append('balance', balanceValue);
       params.append('last_inputter', inputterName);
 
-      console.log('送るデータ:', params.toString()); // ブラウザのF12コンソールで確認用
+      console.log('送るデータ:', params.toString());
 
-      // order.js の fetch 成功時の処理を書き換え
       const response = await fetch('/api/inventory-update', {
         method: 'POST',
         headers: {
@@ -53,10 +53,8 @@ document.addEventListener('DOMContentLoaded', () => {
       if (response.ok) {
         console.log('サーバー更新完了');
 
-        // --- ここで見た目を変更する ---
-        balanceInput.classList.remove('unconfirmed'); // グレーを消す
-        balanceInput.classList.add('confirmed'); // 黒くする
-        // ---------------------------
+        balanceInput.classList.remove('unconfirmed');
+        balanceInput.classList.add('confirmed');
       } else {
         const msg = await response.text();
         console.error('サーバーエラー:', msg);

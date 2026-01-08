@@ -1,4 +1,4 @@
-const API_URL = 'https://saki-2525-ota-final.deno.dev';
+const API_URL = 'https://final-git.saki-2525-ota.deno.net';
 
 document.addEventListener('DOMContentLoaded', () => {
   const dateTarget = document.getElementById('display-date-target');
