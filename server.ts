@@ -154,8 +154,6 @@ router.post('/api/inventory-update', handleInventoryUpdate);
 
 // --- アプリ起動 ---
 const app = new Application();
-app.use(router.routes());
-app.use(router.allowedMethods());
 
 app.use(async (ctx, next) => {
   ctx.response.headers.set('Access-Control-Allow-Origin', '*');
@@ -168,6 +166,9 @@ app.use(async (ctx, next) => {
   }
   await next();
 });
+
+app.use(router.routes());
+app.use(router.allowedMethods());
 
 console.log('Server running on http://localhost:8000/');
 await app.listen({ port: 8000 });

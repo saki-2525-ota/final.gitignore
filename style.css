@@ -24,22 +24,6 @@ main {
   padding: 0 20px;
 }
 
-.push a:nth-child(4) {
-  grid-column: 2/3;
-}
-
-.push a:nth-child(5) {
-  grid-column: 3/4;
-}
-
-button {
-  border: none;
-  background-color: #ff9933;
-  color: white;
-  font-size: 1.2em;
-  font-weight: bold;
-}
-
 .menu-button {
   background-color: #ff9933;
   text-decoration: none;
@@ -49,11 +33,16 @@ button {
   justify-content: center;
   align-items: center;
   min-height: 80px;
+  font-weight: bold;
+  font-size: 1.1rem;
+  transition: all 0.2s;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .menu-button:hover {
   background-color: #e68a00;
   transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
 }
 
 table {
