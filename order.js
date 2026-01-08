@@ -1,14 +1,15 @@
-document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', () => {
   const inventoryForm = document.getElementById('inventory-form');
   const inputterNameField = document.getElementById('inputter-name');
   const tbody = document.getElementById('order-body');
 
-  async function loadInventory() {
+  // --- 1. Supabaseからデータを読み込んで表を作る ---
+  async function loadTable() {
     try {
       const response = await fetch('/api/inventory');
       const data = await response.json();
 
-      tbody.innerHTML = '';
+      tbody.innerHTML = ''; // 一旦クリア
       data.forEach((item) => {
         const row = document.createElement('tr');
         row.innerHTML = `
@@ -17,22 +18,23 @@ document.addEventListener('DOMContentLoaded', async () => {
           <td>${item['提案発注量']}</td>
           <td><input type="number" name="balance" class="order-input" value="${item['提案発注量']}"></td>
           <td class="last-updated">--:--</td>
-          <td><button type="submit" name="item_id" value="${item['商品名']}" class="update-btn">更新</button></td>
+          <td><button type="submit" value="${item['商品名']}" class="update-btn">更新</button></td>
         `;
         tbody.appendChild(row);
       });
-    } catch (error) {
-      console.error('データ読み込み失敗:', error);
+    } catch (err) {
+      console.error('読み込み失敗:', err);
     }
   }
 
-  // 最初に実行
-  loadInventory();
+  loadTable();
 
-  // --- 2. 更新ボタンが押された時の処理 (既存) ---
+  // --- 2. 更新ボタンが押された時の処理 ---
   if (!inventoryForm) return;
+
   inventoryForm.addEventListener('submit', async (event) => {
     event.preventDefault();
+
     const inputterName = inputterNameField.value.trim();
     if (!inputterName) {
       inputterNameField.style.border = '2px solid red';
@@ -47,6 +49,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const balanceInput = row.querySelector('input[name="balance"]');
     const timeCell = row.querySelector('.last-updated');
 
+    // 時刻を表示（送信前に表示）
     const now = new Date();
     timeCell.textContent = now.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
 
@@ -63,12 +66,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
 
       if (response.ok) {
-        balanceInput.style.backgroundColor = '#e0ffe0'; // 成功したら色を変える
+        console.log('保存成功');
+        balanceInput.style.backgroundColor = '#e0ffe0'; // 成功したら緑色に
       } else {
-        timeCell.textContent = 'Error';
+        throw new Error('Server Error');
       }
     } catch (error) {
-      timeCell.textContent = 'Error';
+      console.error('送信失敗:', error);
+      timeCell.textContent = 'Error'; // ここでErrorに書き換わっていました
     }
   });
 });

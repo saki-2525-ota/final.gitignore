@@ -1,6 +1,7 @@
 import { Client } from './db/client.ts';
 import { Application, Router } from 'https://deno.land/x/oak@v14.0.0/mod.ts';
 
+// --- 1. データベース設定 ---
 const config = {
   hostname: 'aws-1-ap-northeast-2.pooler.supabase.com',
   port: 6543,
@@ -12,7 +13,7 @@ const config = {
 const dbClient = new Client(config);
 const router = new Router();
 
-// --- ページ表示 ---
+// --- 2. ページ表示 ---
 const serveHtml = async (ctx: any, fileName: string) => {
   const content = await Deno.readTextFile(fileName);
   ctx.response.status = 200;
@@ -24,7 +25,9 @@ router.get('/', (ctx) => serveHtml(ctx, './index.html'));
 router.get('/analysis', (ctx) => serveHtml(ctx, './analysis.html'));
 router.get('/order', (ctx) => serveHtml(ctx, './order.html'));
 
-// --- 在庫一覧取得API ---
+// --- 3. API（Supabaseとの連携） ---
+
+// 在庫データを取得するAPI
 router.get('/api/inventory', async (ctx) => {
   try {
     const result = await dbClient.execute(`SELECT "商品名", "残量", "提案発注量" FROM inventory ORDER BY id ASC`);
@@ -32,22 +35,23 @@ router.get('/api/inventory', async (ctx) => {
     ctx.response.body = result.rows;
   } catch (err) {
     ctx.response.status = 500;
+    console.error('Fetch Error:', err);
   }
 });
 
-// --- 在庫更新API (Oak v14 修正版) ---
+// 在庫データを更新するAPI（ここがErrorの原因でした）
 router.post('/api/inventory-update', async (ctx) => {
   try {
-    // Oak v14 では .body() は関数ではないため () をつけずに .form() を呼び出します
+    // Oak v14 の正しいリクエストボディ取得方法
     const params = await ctx.request.body.form();
 
     const itemId = params.get('item_id'); // 商品名
-    const balance = params.get('balance'); // 入力された数値
-    const lastInputter = params.get('last_inputter'); // 担当者名
+    const balance = params.get('balance'); // 発注量
+    const lastInputter = params.get('last_inputter'); // 担当者
 
-    console.log(`更新リクエスト受信: ${itemId}, 残量: ${balance}, 担当: ${lastInputter}`);
+    console.log(`更新データ: ${itemId}, 量: ${balance}, 担当: ${lastInputter}`);
 
-    // Supabaseへの更新クエリ（カラム名をダブルクォーテーションで囲む）
+    // Supabaseのデータを更新
     await dbClient.execute(`UPDATE inventory SET "残量" = $1, last_inputter = $2 WHERE "商品名" = $3`, [
       balance,
       lastInputter,
@@ -59,11 +63,11 @@ router.post('/api/inventory-update', async (ctx) => {
   } catch (err) {
     console.error('Update Error:', err);
     ctx.response.status = 500;
-    ctx.response.body = { status: 'error', message: String(err) };
+    ctx.response.body = 'Update Failed';
   }
 });
 
-// グラフ用API
+// 分析・予約用API
 router.get('/api/analysis-data', async (ctx) => {
   try {
     const now = new Date();
@@ -105,5 +109,5 @@ app.use(async (ctx) => {
   }
 });
 
-console.log('Server started: http://localhost:8000');
+console.log('Server running on http://localhost:8000');
 await app.listen({ port: 8000 });
