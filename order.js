@@ -3,11 +3,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const inputterNameField = document.getElementById('inputter-name');
   const tbody = document.getElementById('order-body');
 
-  // --- 1. Supabaseから現在の在庫データを読み込んで表示する ---
+  // --- 1. Supabaseからデータを読み込んで表示する ---
   async function loadInventory() {
     try {
       const response = await fetch('/api/inventory');
-      if (!response.ok) throw new Error('データ取得に失敗しました');
+      if (!response.ok) throw new Error('データ取得失敗');
       const data = await response.json();
 
       tbody.innerHTML = '';
@@ -51,8 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const timeCell = row.querySelector('.last-updated');
 
     const now = new Date();
-    const timeStr = now.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
-    timeCell.textContent = timeStr;
+    timeCell.textContent = now.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
 
     try {
       const params = new URLSearchParams();
@@ -66,10 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
         body: params
       });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Server Response Error: ${errorText}`);
-      }
+      if (!response.ok) throw new Error('Server Error');
 
       console.log('保存成功');
       balanceInput.style.backgroundColor = '#e0ffe0';

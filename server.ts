@@ -38,14 +38,14 @@ router.get('/api/inventory', async (ctx) => {
 // --- 在庫を更新するAPI（ここが不足していました） ---
 router.post('/api/inventory-update', async (ctx) => {
   try {
-    // Oak v14 の正しいリクエストボディ取得方法
+    // Oak v14 の正しいリクエストボディ取得
     const params = await ctx.request.body.form();
 
     const itemId = params.get('item_id');
     const balance = params.get('balance');
     const lastInputter = params.get('last_inputter');
 
-    console.log(`更新開始: ${itemId}, 数値: ${balance}, 担当: ${lastInputter}`);
+    console.log(`更新リクエスト: ${itemId}, 数値: ${balance}, 担当: ${lastInputter}`);
 
     await dbClient.execute(`UPDATE inventory SET "残量" = $1, last_inputter = $2 WHERE "商品名" = $3`, [
       balance,
@@ -56,7 +56,7 @@ router.post('/api/inventory-update', async (ctx) => {
     ctx.response.status = 200;
     ctx.response.body = { status: 'ok' };
   } catch (err) {
-    console.error('Update Error (Server Side):', err);
+    console.error('Update Error (Server):', err);
     ctx.response.status = 500;
     ctx.response.body = { error: String(err) };
   }
