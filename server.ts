@@ -47,35 +47,40 @@ async function handleInventoryUpdate(ctx: Context) {
 }
 
 async function renderOrderPage(ctx: Context) {
-  const result = await dbClient.execute(
-    'SELECT id, "商品名", "残量", "最大保持量", "提案発注量", "発注量", last_updated FROM inventory ORDER BY id ASC'
-  );
+  try {
+    const result = await dbClient.execute(
+      'SELECT id, "商品名", "残量", "最大保持量", "提案発注量", "発注量", last_updated FROM inventory ORDER BY id ASC'
+    );
 
-  const inventoryRows = (result ? result.rows : []) as any[];
+    const inventoryRows = (result ? result.rows : []) as any[];
 
-  let tableRowsHtml = '';
-  for (const item of inventoryRows) {
-    tableRowsHtml += `
-      <tr>
-        <td>${item['商品名']}</td>
-        <td>${item['残量']}</td>
-        <td class="suggested-cell">${item['提案発注量']}</td>
-        <td>
-          <input type="number" name="balance" class="order-input unconfirmed" value="${item['提案発注量']}">
-        </td>
-        <td class="last-updated">--:--</td>
-        <td>
-          <button type="submit" value="${item['商品名']}" class="update-btn">更新</button>
-        </td>
-      </tr>
-    `;
+    let tableRowsHtml = '';
+    for (const item of inventoryRows) {
+      tableRowsHtml += `
+        <tr>
+          <td>${item['商品名']}</td>
+          <td>${item['残量']}</td>
+          <td class="suggested-cell">${item['提案発注量']}</td>
+          <td>
+            <input type="number" name="balance" class="order-input unconfirmed" value="${item['提案発注量']}">
+          </td>
+          <td class="last-updated">--:--</td>
+          <td>
+            <button type="submit" value="${item['商品名']}" class="update-btn">更新</button>
+          </td>
+        </tr>
+      `;
+    }
+
+    let html = await Deno.readTextFile('./order.html');
+    html = html.replace(/<tbody id="order-body">[\s\S]*?<\/tbody>/, `<tbody id="order-body">${tableRowsHtml}</tbody>`);
+
+    ctx.response.body = html;
+    ctx.response.type = 'text/html';
+  } catch (err) {
+    ctx.response.status = 500;
+    ctx.response.body = 'Error rendering order page';
   }
-
-  let html = await Deno.readTextFile('./order.html');
-  html = html.replace(/<tbody id="order-body">[\s\S]*?<\/tbody>/, `<tbody id="order-body">${tableRowsHtml}</tbody>`);
-
-  ctx.response.body = html;
-  ctx.response.type = 'text/html';
 }
 
 async function handleAnalysisData(ctx: Context) {
@@ -106,7 +111,7 @@ async function handleAnalysisData(ctx: Context) {
 
 const router = new Router();
 
-router.get('/', async (ctx) => {
+router.get('/', async (ctx: Context) => {
   const html = await Deno.readTextFile('./index.html');
   ctx.response.body = html;
   ctx.response.type = 'text/html';
@@ -114,7 +119,7 @@ router.get('/', async (ctx) => {
 
 router.get('/order', renderOrderPage);
 
-router.get('/analysis', async (ctx) => {
+router.get('/analysis', async (ctx: Context) => {
   const html = await Deno.readTextFile('./analysis.html');
   ctx.response.body = html;
   ctx.response.type = 'text/html';
@@ -125,7 +130,7 @@ router.post('/api/inventory-update', handleInventoryUpdate);
 
 const app = new Application();
 
-app.use(async (ctx, next) => {
+app.use(async (ctx: Context, next) => {
   ctx.response.headers.set('Access-Control-Allow-Origin', '*');
   ctx.response.headers.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   ctx.response.headers.set('Access-Control-Allow-Headers', 'Content-Type');
@@ -139,11 +144,13 @@ app.use(async (ctx, next) => {
 app.use(router.routes());
 app.use(router.allowedMethods());
 
-app.use(async (ctx) => {
-  await send(ctx, ctx.request.url.pathname, {
-    root: Deno.cwd(),
-    index: 'index.html'
-  });
+app.use(async (ctx: Context) => {
+  try {
+    await send(ctx, ctx.request.url.pathname, {
+      root: Deno.cwd(),
+      index: 'index.html'
+    });
+  } catch {}
 });
 
 console.log('Server running on http://localhost:8000/');
