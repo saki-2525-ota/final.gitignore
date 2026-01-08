@@ -1,4 +1,4 @@
-const API_URL = 'https://final-git.saki-2525-ota.deno.dev';
+const API_URL = 'https://final-git.saki-2525-ota.deno.net';
 
 async function initAnalysis() {
   try {
