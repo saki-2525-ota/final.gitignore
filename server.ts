@@ -15,77 +15,50 @@ const router = new Router();
 const serveHtml = async (ctx: any, fileName: string) => {
   const content = await Deno.readTextFile(fileName);
   ctx.response.status = 200;
-  ctx.response.type = 'text/html; charset=utf-8';
+  ctx.response.type = 'text/html; charset=utf-8'; // ここで文字化けを防止
   ctx.response.body = content;
 };
 
 router.get('/', (ctx) => serveHtml(ctx, './index.html'));
 router.get('/analysis', (ctx) => serveHtml(ctx, './analysis.html'));
 router.get('/order', (ctx) => serveHtml(ctx, './order.html'));
+router.get('/reservations', (ctx) => serveHtml(ctx, './reservations.html')); // 予約ページ追加
 
-// --- 在庫一覧を取得するAPI ---
-router.get('/api/inventory', async (ctx) => {
+// --- 予約データ取得API (今日の日付分) ---
+router.get('/api/reservations', async (ctx) => {
   try {
-    const result = await dbClient.execute(`SELECT "商品名", "残量", "提案発注量" FROM inventory ORDER BY id ASC`);
+    const now = new Date();
+    // 日本時間にするために+9時間
+    const today = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+    const todayStr = today.toISOString().split('T')[0];
+
+    const result = await dbClient.execute(
+      `SELECT * FROM reservations WHERE reservation_date = $1 ORDER BY reservation_time ASC`,
+      [todayStr]
+    );
     ctx.response.type = 'application/json; charset=utf-8';
     ctx.response.body = result.rows;
   } catch (err) {
-    console.error('Fetch Error:', err);
     ctx.response.status = 500;
   }
 });
 
-// --- 在庫を更新するAPI（ここが不足していました） ---
+// 在庫一覧API
+router.get('/api/inventory', async (ctx) => {
+  const result = await dbClient.execute(`SELECT "商品名", "残量", "提案発注量" FROM inventory ORDER BY id ASC`);
+  ctx.response.type = 'application/json; charset=utf-8';
+  ctx.response.body = result.rows;
+});
+
+// 在庫更新API
 router.post('/api/inventory-update', async (ctx) => {
-  try {
-    // Oak v14 の正しいリクエストボディ取得
-    const params = await ctx.request.body.form();
-
-    const itemId = params.get('item_id');
-    const balance = params.get('balance');
-    const lastInputter = params.get('last_inputter');
-
-    console.log(`更新リクエスト: ${itemId}, 数値: ${balance}, 担当: ${lastInputter}`);
-
-    await dbClient.execute(`UPDATE inventory SET "残量" = $1, last_inputter = $2 WHERE "商品名" = $3`, [
-      balance,
-      lastInputter,
-      itemId
-    ]);
-
-    ctx.response.status = 200;
-    ctx.response.body = { status: 'ok' };
-  } catch (err) {
-    console.error('Update Error (Server):', err);
-    ctx.response.status = 500;
-    ctx.response.body = { error: String(err) };
-  }
-});
-
-// 分析用API
-router.get('/api/analysis-data', async (ctx) => {
-  try {
-    const now = new Date();
-    const tomorrow = new Date(now.getTime() + 9 * 60 * 60 * 1000 + 24 * 60 * 60 * 1000);
-    const tomorrowStr = tomorrow.toISOString().split('T')[0];
-    const resResult = await dbClient.execute(
-      `SELECT SUM(adult_count) as adults, SUM(children_count) as kids FROM reservations WHERE reservation_date = $1`,
-      [tomorrowStr]
-    );
-    const stats = (resResult.rows[0] as any) || { adults: 0, kids: 0 };
-    const invResult = await dbClient.execute(
-      `SELECT "商品名", "残量", "提案発注量", COALESCE(family_score, 5) as family_score, COALESCE(solo_score, 5) as solo_score FROM inventory ORDER BY id ASC`
-    );
-    ctx.response.type = 'application/json; charset=utf-8';
-    ctx.response.body = {
-      tomorrow: tomorrowStr,
-      adults: Number(stats.adults || 0),
-      kids: Number(stats.kids || 0),
-      chartData: invResult.rows
-    };
-  } catch (err) {
-    ctx.response.status = 500;
-  }
+  const params = await ctx.request.body.form();
+  await dbClient.execute(`UPDATE inventory SET "残量" = $1, last_inputter = $2 WHERE "商品名" = $3`, [
+    params.get('balance'),
+    params.get('last_inputter'),
+    params.get('item_id')
+  ]);
+  ctx.response.body = { status: 'ok' };
 });
 
 const app = new Application();
