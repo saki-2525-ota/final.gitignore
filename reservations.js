@@ -1,3 +1,5 @@
+const API_URL = 'https://saki-2525-ota-final.deno.dev';
+
 document.addEventListener('DOMContentLoaded', () => {
   const dateTarget = document.getElementById('display-date-target');
 
@@ -20,4 +22,19 @@ document.addEventListener('DOMContentLoaded', () => {
     // HTML要素に日付を反映
     dateTarget.textContent = formattedDate;
   }
+  loadReservations();
 });
+
+async function loadReservations() {
+  try {
+    // 修正ポイント：'/api/reservations' ではなく、絶対URLを使う
+    const response = await fetch(`${API_URL}/api/reservations`);
+    const data = await response.json();
+
+    // ここでHTMLにデータを表示する処理を書く（例）
+    console.log('予約データ:', data);
+    // displayReservations(data); などの表示用関数を呼び出す
+  } catch (error) {
+    console.error('データ取得エラー:', error);
+  }
+}
