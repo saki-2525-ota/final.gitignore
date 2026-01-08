@@ -30,18 +30,20 @@ router.get('/analysis', (ctx) => serveHtml(ctx, './analysis.html'));
 router.get('/order', (ctx) => serveHtml(ctx, './order.html'));
 router.get('/reservations', (ctx) => serveHtml(ctx, './reservations.html'));
 
-// --- 在庫一覧を取得するAPI (404エラー対策) ---
+// --- 【在庫一覧を取得するAPI】 (404エラー対策) ---
 router.get('/api/inventory', async (ctx) => {
   try {
     const result = await dbClient.execute(`SELECT "商品名", "残量", "提案発注量" FROM inventory ORDER BY id ASC`);
-    ctx.response.type = 'application/json; charset=utf-8';
+    ctx.response.status = 200;
+    ctx.response.headers.set('Content-Type', 'application/json; charset=utf-8');
     ctx.response.body = result.rows;
   } catch (err) {
     ctx.response.status = 500;
+    ctx.response.body = { error: String(err) };
   }
 });
 
-// --- 在庫を更新するAPI ---
+// --- 【在庫を更新するAPI】 ---
 router.post('/api/inventory-update', async (ctx) => {
   try {
     const params = await ctx.request.body.form();
@@ -56,7 +58,7 @@ router.post('/api/inventory-update', async (ctx) => {
   }
 });
 
-// --- 分析用データAPI (予約がなくても在庫を必ず返す) ---
+// --- 【分析用データAPI】 (予約がなくても必ず返す) ---
 router.get('/api/analysis-data', async (ctx) => {
   try {
     const now = new Date();
@@ -70,7 +72,7 @@ router.get('/api/analysis-data', async (ctx) => {
     );
     const stats = resResult.rows[0] as any;
 
-    ctx.response.type = 'application/json; charset=utf-8';
+    ctx.response.headers.set('Content-Type', 'application/json; charset=utf-8');
     ctx.response.body = {
       tomorrow: tomorrowStr,
       adults: Number(stats.adults),
@@ -81,11 +83,11 @@ router.get('/api/analysis-data', async (ctx) => {
   }
 });
 
-// --- 予約一覧取得API ---
+// --- 【予約一覧取得API】 ---
 router.get('/api/reservations', async (ctx) => {
   try {
     const result = await dbClient.execute(`SELECT * FROM reservations ORDER BY reservation_time ASC`);
-    ctx.response.type = 'application/json; charset=utf-8';
+    ctx.response.headers.set('Content-Type', 'application/json; charset=utf-8');
     ctx.response.body = result.rows;
   } catch (err) {
     ctx.response.status = 500;
@@ -96,6 +98,7 @@ const app = new Application();
 app.use(router.routes());
 app.use(router.allowedMethods());
 
+// 静的ファイルの配信
 app.use(async (ctx) => {
   const path = ctx.request.url.pathname;
   try {
