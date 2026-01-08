@@ -14,71 +14,79 @@ const dbClient = new Client(config);
 
 const router = new Router();
 
-// --- 2. ルート設定 (URLとファイルの紐付け) ---
+// --- 2. ルート定義（手動読み込み方式） ---
 
-// (A) トップページ: http://...deno.dev/
+// トップページ
 router.get('/', async (ctx) => {
+  console.log('Access: /');
   const html = await Deno.readTextFile('./index.html');
-  ctx.response.headers.set('Content-Type', 'text/html; charset=utf-8');
+  ctx.response.status = 200;
+  ctx.response.type = 'text/html; charset=utf-8';
   ctx.response.body = html;
 });
 
-// (B) 分析ページ: http://...deno.dev/analysis
+// 分析ページ
 router.get('/analysis', async (ctx) => {
+  console.log('Access: /analysis');
   const html = await Deno.readTextFile('./analysis.html');
-  ctx.response.headers.set('Content-Type', 'text/html; charset=utf-8');
+  ctx.response.status = 200;
+  ctx.response.type = 'text/html; charset=utf-8';
   ctx.response.body = html;
 });
 
-// (C) データ取得API
+// API: 分析データ
 router.get('/api/analysis-data', async (ctx) => {
+  console.log('API Request: /api/analysis-data');
   try {
-    const resResult = await dbClient.execute(
-      `SELECT SUM(adult_count) as adults, SUM(children_count) as kids FROM reservations`
-    );
-    const stats = (resResult.rows[0] as any) || { adults: 0, kids: 0 };
-
     const invResult = await dbClient.execute(
       `SELECT "商品名", COALESCE(family_score, 0) as family_score, COALESCE(solo_score, 0) as solo_score FROM inventory`
     );
-
-    ctx.response.headers.set('Content-Type', 'application/json; charset=utf-8');
+    ctx.response.status = 200;
+    ctx.response.type = 'application/json; charset=utf-8';
     ctx.response.body = {
       tomorrow: new Date().toISOString().split('T')[0],
-      adults: Number(stats.adults || 0),
-      kids: Number(stats.kids || 0),
+      adults: 0,
+      kids: 0,
       chartData: invResult.rows
     };
   } catch (err: any) {
+    console.error('DB Error:', err);
     ctx.response.status = 500;
-    ctx.response.body = { error: String(err) };
+    ctx.response.body = { error: 'Database error' };
   }
 });
 
-// --- 3. サーバーの起動設定 ---
+// --- 3. サーバー設定 ---
 const app = new Application();
 
-// ルーターを登録
+// エラーハンドラー（詳細なログを出力）
+app.use(async (ctx, next) => {
+  try {
+    await next();
+  } catch (err) {
+    console.error('Critical Error:', err);
+    ctx.response.status = 500;
+    ctx.response.body = 'Internal Server Error';
+  }
+});
+
 app.use(router.routes());
 app.use(router.allowedMethods());
 
-// 静的ファイル (CSS/JS) の読み込み処理
+// 静的ファイル処理 (analysis.js や style.css)
 app.use(async (ctx) => {
   const path = ctx.request.url.pathname;
-  // ルート以外のファイルリクエスト（style.cssやanalysis.jsなど）を処理
-  if (path !== '/') {
-    try {
-      const content = await Deno.readFile(`.${path}`);
-      if (path.endsWith('.css')) ctx.response.headers.set('Content-Type', 'text/css; charset=utf-8');
-      if (path.endsWith('.js')) ctx.response.headers.set('Content-Type', 'application/javascript; charset=utf-8');
-      ctx.response.body = content;
-    } catch {
-      // ファイルがない場合は404
-      ctx.response.status = 404;
-      ctx.response.body = 'File Not Found';
-    }
+  if (path === '/') return;
+
+  try {
+    const fileContent = await Deno.readFile(`.${path}`);
+    if (path.endsWith('.js')) ctx.response.type = 'application/javascript; charset=utf-8';
+    if (path.endsWith('.css')) ctx.response.type = 'text/css; charset=utf-8';
+    ctx.response.body = fileContent;
+  } catch {
+    ctx.response.status = 404;
   }
 });
 
-console.log('--- Server Started! ---');
+console.log('--- サーバー起動成功 (UTF-8強制モード) ---');
 await app.listen({ port: 8000 });
