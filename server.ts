@@ -98,54 +98,41 @@ async function renderOrderPage(ctx: Context) {
   ctx.response.type = 'text/html';
 }
 
-// C. 分析ページ表示 (GET /analysis)
-async function renderAnalysisPage(ctx: Context) {
+async function handleAnalysisData(ctx: Context) {
   try {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     const tomorrowStr = tomorrow.toISOString().split('T')[0];
 
-    // 予約データの取得
     const resResult = await dbClient.execute(
       `SELECT SUM(adult_count) as adults, SUM(children_count) as kids 
-      FROM reservations WHERE reservation_date = $1`,
+       FROM reservations WHERE reservation_date = $1`,
       [tomorrowStr]
     );
     const stats = (resResult.rows[0] as any) || { adults: 0, kids: 0 };
 
-    // 商品特性データの取得
     const invResult = await dbClient.execute(`SELECT "商品名", family_score, solo_score FROM inventory`);
     const chartData = invResult.rows;
 
-    const template = await Deno.readTextFile('./analysis.html');
-
-    const processedHtml = template
-      .replace(/{{tomorrow}}/g, tomorrowStr)
-      .replace(/{{adults}}/g, String(stats.adults || 0))
-      .replace(/{{kids}}/g, String(stats.kids || 0))
-      .replace(/{{chartData}}/g, JSON.stringify(chartData));
-
-    ctx.response.body = processedHtml;
-    ctx.response.type = 'text/html';
+    ctx.response.body = {
+      tomorrow: tomorrowStr,
+      adults: stats.adults || 0,
+      kids: stats.kids || 0,
+      chartData: chartData
+    };
+    ctx.response.type = 'application/json';
   } catch (err) {
-    console.error('Analysis Page Error:', err);
     ctx.response.status = 500;
-    ctx.response.body = 'Internal Server Error';
+    ctx.response.body = { error: 'Internal Server Error' };
   }
 }
 
-//  ルーター設定
 const router = new Router();
 
-router.get('/analysis', renderAnalysisPage);
-router.get('/order', renderOrderPage);
-router.get('/inventory', async (ctx) => {
-  const html = await Deno.readTextFile('./inventory.html');
-  ctx.response.body = html;
-  ctx.response.type = 'text/html';
-});
-router.get('/', async (ctx) => {
-  const html = await Deno.readTextFile('./index.html');
+router.get('/api/analysis-data', handleAnalysisData);
+
+router.get('/analysis', async (ctx) => {
+  const html = await Deno.readTextFile('./analysis.html');
   ctx.response.body = html;
   ctx.response.type = 'text/html';
 });
