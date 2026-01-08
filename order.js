@@ -1,15 +1,15 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   const inventoryForm = document.getElementById('inventory-form');
   const inputterNameField = document.getElementById('inputter-name');
   const tbody = document.getElementById('order-body');
 
-  // --- 1. Supabaseからデータを読み込んで表を作る ---
-  async function loadTable() {
+  // --- 1. Supabaseからデータを読み込んで表示する ---
+  async function loadInventory() {
     try {
       const response = await fetch('/api/inventory');
       const data = await response.json();
 
-      tbody.innerHTML = ''; // 一旦クリア
+      tbody.innerHTML = ''; // 一旦空にする
       data.forEach((item) => {
         const row = document.createElement('tr');
         row.innerHTML = `
@@ -22,12 +22,13 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
         tbody.appendChild(row);
       });
-    } catch (err) {
-      console.error('読み込み失敗:', err);
+    } catch (error) {
+      console.error('データ読み込み失敗:', error);
     }
   }
 
-  loadTable();
+  // 最初に実行
+  await loadInventory();
 
   // --- 2. 更新ボタンが押された時の処理 ---
   if (!inventoryForm) return;
@@ -49,7 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const balanceInput = row.querySelector('input[name="balance"]');
     const timeCell = row.querySelector('.last-updated');
 
-    // 時刻を表示（送信前に表示）
+    // 通信前にまず時刻を表示
     const now = new Date();
     timeCell.textContent = now.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
 
@@ -67,13 +68,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (response.ok) {
         console.log('保存成功');
-        balanceInput.style.backgroundColor = '#e0ffe0'; // 成功したら緑色に
+        balanceInput.style.backgroundColor = '#e0ffe0'; // 成功したら色を変える
       } else {
         throw new Error('Server Error');
       }
     } catch (error) {
-      console.error('送信失敗:', error);
-      timeCell.textContent = 'Error'; // ここでErrorに書き換わっていました
+      console.error('送信エラー:', error);
+      timeCell.textContent = 'Error'; // ここで書き換わっていました
     }
   });
 });
