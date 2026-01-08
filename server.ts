@@ -14,11 +14,13 @@ const config = {
 const dbClient = new Client(config);
 
 // --- 2. データをHTMLに入れ込む関数 ---
+
+// [発注ページ用]
 async function renderOrderPage(ctx: Context) {
   try {
     console.log('--- 発注ページを作成中 ---');
 
-    // Supabaseからデータ取得 (スコアは取得するが表示はしない)
+    // Supabaseからデータ取得
     const result = await dbClient.execute(
       'SELECT "商品名", "残量", "提案発注量", family_score, solo_score FROM inventory ORDER BY id ASC'
     );
@@ -42,10 +44,7 @@ async function renderOrderPage(ctx: Context) {
         </tr>`;
     }
 
-    // HTMLファイルを読み込む
     let html = await Deno.readTextFile('./order.html');
-
-    // 【重要】tbodyの中身を確実に置き換える（スペースがあっても大丈夫なように正規表現を使用）
     html = html.replace(/<tbody id="order-body">[\s\S]*?<\/tbody>/, `<tbody id="order-body">${tableRowsHtml}</tbody>`);
 
     ctx.response.body = html;
@@ -57,29 +56,71 @@ async function renderOrderPage(ctx: Context) {
   }
 }
 
+// [分析データ取得API用]
+async function handleAnalysisData(ctx: Context) {
+  try {
+    // 1. 日本時間の「明日」の日付を計算
+    const now = new Date();
+    // Deno Deploy(UTC)から日本時間(+9h)にして、さらに明日(+24h)にする
+    const tomorrow = new Date(now.getTime() + 9 * 60 * 60 * 1000 + 24 * 60 * 60 * 1000);
+    const tomorrowStr = tomorrow.toISOString().split('T')[0];
+
+    // 2. 予約テーブルから人数の合計を取得
+    const resResult = await dbClient.execute(
+      `SELECT SUM(adult_count) as adults, SUM(children_count) as kids 
+       FROM reservations WHERE reservation_date = $1`,
+      [tomorrowStr]
+    );
+    const stats = (resResult.rows[0] as any) || { adults: 0, kids: 0 };
+
+    // 3. 在庫テーブルからスコアを取得
+    const invResult = await dbClient.execute(`SELECT "商品名", family_score, solo_score FROM inventory`);
+
+    // 4. まとめて返却
+    ctx.response.body = {
+      tomorrow: tomorrowStr,
+      adults: Number(stats.adults || 0),
+      kids: Number(stats.kids || 0),
+      chartData: invResult.rows
+    };
+    ctx.response.type = 'application/json';
+  } catch (err) {
+    console.error('API Error:', err);
+    ctx.response.status = 500;
+    ctx.response.body = { error: 'Internal Server Error' };
+  }
+}
+
 // --- 3. ルーティング設定 ---
 const router = new Router();
 
-// /order でも /order.html でも同じ関数（データ注入版）を呼ぶようにする
+// 発注ページ
 router.get('/order', renderOrderPage);
 router.get('/order.html', renderOrderPage);
 
+// トップページ
 router.get('/', async (ctx) => {
   const html = await Deno.readTextFile('./index.html');
   ctx.response.body = html;
   ctx.response.type = 'text/html';
 });
 
-// 分析ページ用
+// 分析ページ
 router.get('/analysis', async (ctx) => {
   const html = await Deno.readTextFile('./analysis.html');
   ctx.response.body = html;
   ctx.response.type = 'text/html';
 });
+router.get('/analysis.html', async (ctx) => {
+  const html = await Deno.readTextFile('./analysis.html');
+  ctx.response.body = html;
+  ctx.response.type = 'text/html';
+});
 
-// API
+// API関連
+router.get('/api/analysis-data', handleAnalysisData);
+
 router.post('/api/inventory-update', async (ctx) => {
-  // 既存の更新処理...
   const body = ctx.request.body;
   const val = await body.form();
   const itemName = val.get('item_id');
@@ -88,24 +129,4 @@ router.post('/api/inventory-update', async (ctx) => {
   ctx.response.body = { ok: true };
 });
 
-// --- 4. アプリ起動と静的ファイル対策 ---
 const app = new Application();
-app.use(router.routes());
-app.use(router.allowedMethods());
-
-// CSSやJSファイルを読み込むための設定（sendを使わない方法）
-app.use(async (ctx) => {
-  const path = ctx.request.url.pathname;
-  if (path.endsWith('.css') || path.endsWith('.js')) {
-    try {
-      const content = await Deno.readFile(`.${path}`);
-      ctx.response.body = content;
-      ctx.response.type = path.endsWith('.css') ? 'text/css' : 'application/javascript';
-    } catch {
-      ctx.response.status = 404;
-    }
-  }
-});
-
-console.log('Server running on http://localhost:8000/');
-await app.listen({ port: 8000 });
