@@ -49,7 +49,7 @@ async function handleInventoryUpdate(ctx: Context) {
 async function renderOrderPage(ctx: Context) {
   try {
     const result = await dbClient.execute(
-      'SELECT id, "商品名", "残量", "最大保持量", "提案発注量", "発注量", last_updated FROM inventory ORDER BY id ASC'
+      'SELECT id, "商品名", "残量", "最大保持量", "提案発注量", "発注量", family_score, solo_score, last_updated FROM inventory ORDER BY id ASC'
     );
 
     const inventoryRows = (result ? result.rows : []) as any[];
@@ -150,7 +150,9 @@ app.use(async (ctx: Context) => {
       root: Deno.cwd(),
       index: 'index.html'
     });
-  } catch {}
+  } catch {
+    // ファイルが見つからない場合は何もしない
+  }
 });
 
 console.log('Server running on http://localhost:8000/');
