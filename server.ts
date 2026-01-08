@@ -14,8 +14,52 @@ const dbClient = new Client(config);
 
 const router = new Router();
 
-// --- 2. 処理関数 (API) ---
+// --- 2. 各ページのルート設定 ---
 
+// トップページ (/) ※これが漏れていたため開けなくなっていました
+router.get('/', async (ctx) => {
+  try {
+    const html = await Deno.readTextFile('./index.html');
+    ctx.response.body = html;
+    ctx.response.headers.set('Content-Type', 'text/html; charset=utf-8');
+  } catch {
+    ctx.response.body = 'index.html が見つかりません。';
+  }
+});
+
+// 分析ページ (/analysis)
+router.get('/analysis', async (ctx) => {
+  try {
+    const html = await Deno.readTextFile('./analysis.html');
+    ctx.response.body = html;
+    ctx.response.headers.set('Content-Type', 'text/html; charset=utf-8');
+  } catch {
+    ctx.response.status = 404;
+    ctx.response.body = 'analysis.html not found';
+  }
+});
+
+// 発注ページ (/order)
+router.get('/order', async (ctx) => {
+  try {
+    const result = await dbClient.execute('SELECT "商品名", "残量", "提案発注量" FROM inventory ORDER BY id ASC');
+    const rows = (result ? result.rows : []) as any[];
+    let tableRowsHtml = '';
+    for (const item of rows) {
+      tableRowsHtml += `<tr><td>${item['商品名']}</td><td>${item['残量']}</td><td>${item['提案発注量']}</td><td><input type="number" name="balance" class="order-input" value="${item['提案発注量']}"></td><td class="last-updated">--:--</td><td><button type="submit" value="${item['商品名']}" class="update-btn">更新</button></td></tr>`;
+    }
+    const html = await Deno.readTextFile('./order.html');
+    ctx.response.body = html.replace(
+      /<tbody id="order-body">[\s\S]*?<\/tbody>/,
+      `<tbody id="order-body">${tableRowsHtml}</tbody>`
+    );
+    ctx.response.headers.set('Content-Type', 'text/html; charset=utf-8');
+  } catch {
+    ctx.response.status = 500;
+  }
+});
+
+// --- 3. API (データ取得用) ---
 router.get('/api/analysis-data', async (ctx) => {
   try {
     const now = new Date();
@@ -38,55 +82,21 @@ router.get('/api/analysis-data', async (ctx) => {
       kids: Number(stats.kids || 0),
       chartData: invResult.rows
     };
-    // ★文字化け対策: JSONにUTF-8を指定
     ctx.response.headers.set('Content-Type', 'application/json; charset=utf-8');
   } catch (err: any) {
-    const msg = err instanceof Error ? err.message : String(err);
     ctx.response.status = 500;
-    ctx.response.body = { error: msg };
+    ctx.response.body = { error: String(err) };
   }
 });
 
-// --- 3. ページ表示 ---
-
-router.get('/analysis', async (ctx) => {
-  try {
-    const html = await Deno.readTextFile('./analysis.html');
-    ctx.response.body = html;
-    // ★文字化け対策: HTMLにUTF-8を指定
-    ctx.response.headers.set('Content-Type', 'text/html; charset=utf-8');
-  } catch {
-    ctx.response.status = 404;
-    ctx.response.body = 'File not found';
-  }
-});
-
-router.get('/order', async (ctx) => {
-  try {
-    const result = await dbClient.execute('SELECT "商品名", "残量", "提案発注量" FROM inventory ORDER BY id ASC');
-    const rows = (result ? result.rows : []) as any[];
-    let tableRowsHtml = '';
-    for (const item of rows) {
-      tableRowsHtml += `<tr><td>${item['商品名']}</td><td>${item['残量']}</td><td>${item['提案発注量']}</td><td><input type="number" name="balance" class="order-input" value="${item['提案発注量']}"></td><td class="last-updated">--:--</td><td><button type="submit" value="${item['商品名']}" class="update-btn">更新</button></td></tr>`;
-    }
-    const html = await Deno.readTextFile('./order.html');
-    ctx.response.body = html.replace(
-      /<tbody id="order-body">[\s\S]*?<\/tbody>/,
-      `<tbody id="order-body">${tableRowsHtml}</tbody>`
-    );
-    ctx.response.headers.set('Content-Type', 'text/html; charset=utf-8');
-  } catch {
-    ctx.response.status = 500;
-  }
-});
-
-// --- 4. サーバー起動と静的ファイル ---
+// --- 4. 静的ファイルとサーバー起動 ---
 const app = new Application();
 app.use(router.routes());
 app.use(router.allowedMethods());
 
 app.use(async (ctx) => {
   const path = ctx.request.url.pathname;
+  if (path === '/') return;
   try {
     const content = await Deno.readFile(`.${path}`);
     if (path.endsWith('.css')) ctx.response.headers.set('Content-Type', 'text/css; charset=utf-8');
@@ -97,5 +107,5 @@ app.use(async (ctx) => {
   }
 });
 
-console.log('Server started on http://localhost:8000');
+console.log('Server is running! http://localhost:8000');
 await app.listen({ port: 8000 });
