@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // サイトで紹介されている古典的な方法で整形
     const year = today.getFullYear();
-    const month = today.getMonth() + 1; // getMonth()は0から始まるため+1
+    const month = today.getMonth() + 1;
     const date = today.getDate();
     const day = days[today.getDay()];
 
@@ -27,13 +27,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function loadReservations() {
   try {
-    // 修正ポイント：'/api/reservations' ではなく、絶対URLを使う
     const response = await fetch(`${API_URL}/api/reservations`);
     const data = await response.json();
 
-    // ここでHTMLにデータを表示する処理を書く（例）
     console.log('予約データ:', data);
-    // displayReservations(data); などの表示用関数を呼び出す
   } catch (error) {
     console.error('データ取得エラー:', error);
   }

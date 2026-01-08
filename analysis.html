@@ -9,17 +9,16 @@
   <body>
     <main id="analysis-page">
       <h2>在庫分析 (明日の予測)</h2>
-
-      <p class="date-display">対象日: <strong id="tomorrow-date">読み込み中...</strong></p>
+      <p class="date-display">対象日: <strong>{{tomorrow}}</strong></p>
 
       <div class="stats-container">
         <div class="stat-card">
           <h3>大人予約合計</h3>
-          <p class="stat-value"><span id="adult-count">0</span><span>名</span></p>
+          <p class="stat-value">{{adults}}<span>名</span></p>
         </div>
         <div class="stat-card highlighted">
           <h3>子供予約合計</h3>
-          <p class="stat-value"><span id="kids-count">0</span><span>名</span></p>
+          <p class="stat-value">{{kids}}<span>名</span></p>
         </div>
       </div>
 
@@ -29,10 +28,40 @@
       </div>
 
       <div class="nav-actions">
-        <a href="./order.html" class="menu-button">発注ページへ進む</a>
+        <a href="/order" class="menu-button">発注ページへ進む</a>
       </div>
-
-      <script src="analysis.js"></script>
     </main>
+
+    <script>
+      const jsonText = '{{chartData}}';
+      const rawData = JSON.parse(jsonText);
+      const ctx = document.getElementById('radarChart').getContext('2d');
+
+      new Chart(ctx, {
+        type: 'radar',
+        data: {
+          labels: rawData.map((d) => d.商品名),
+          datasets: [
+            {
+              label: 'ファミリー人気度',
+              data: rawData.map((d) => d.family_score),
+              backgroundColor: 'rgba(255, 153, 51, 0.2)',
+              borderColor: '#ff9933',
+              pointBackgroundColor: '#ff9933'
+            },
+            {
+              label: 'お一人様人気度',
+              data: rawData.map((d) => d.solo_score),
+              backgroundColor: 'rgba(54, 162, 235, 0.2)',
+              borderColor: 'rgb(54, 162, 235)',
+              pointBackgroundColor: 'rgb(54, 162, 235)'
+            }
+          ]
+        },
+        options: {
+          scales: { r: { suggestMin: 0, suggestMax: 10 } }
+        }
+      });
+    </script>
   </body>
 </html>
