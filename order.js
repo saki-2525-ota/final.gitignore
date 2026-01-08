@@ -1,15 +1,16 @@
-document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', () => {
   const inventoryForm = document.getElementById('inventory-form');
   const inputterNameField = document.getElementById('inputter-name');
   const tbody = document.getElementById('order-body');
 
-  // --- 1. Supabaseからデータを読み込んで表示する ---
+  // --- 1. Supabaseから現在の在庫データを読み込んで表示する ---
   async function loadInventory() {
     try {
       const response = await fetch('/api/inventory');
+      if (!response.ok) throw new Error('データ取得に失敗しました');
       const data = await response.json();
 
-      tbody.innerHTML = ''; // 一旦空にする
+      tbody.innerHTML = '';
       data.forEach((item) => {
         const row = document.createElement('tr');
         row.innerHTML = `
@@ -23,12 +24,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         tbody.appendChild(row);
       });
     } catch (error) {
-      console.error('データ読み込み失敗:', error);
+      console.error('読み込み失敗:', error);
     }
   }
 
-  // 最初に実行
-  await loadInventory();
+  loadInventory();
 
   // --- 2. 更新ボタンが押された時の処理 ---
   if (!inventoryForm) return;
@@ -50,9 +50,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const balanceInput = row.querySelector('input[name="balance"]');
     const timeCell = row.querySelector('.last-updated');
 
-    // 通信前にまず時刻を表示
     const now = new Date();
-    timeCell.textContent = now.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+    const timeStr = now.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+    timeCell.textContent = timeStr;
 
     try {
       const params = new URLSearchParams();
@@ -66,15 +66,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         body: params
       });
 
-      if (response.ok) {
-        console.log('保存成功');
-        balanceInput.style.backgroundColor = '#e0ffe0'; // 成功したら色を変える
-      } else {
-        throw new Error('Server Error');
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Server Response Error: ${errorText}`);
       }
+
+      console.log('保存成功');
+      balanceInput.style.backgroundColor = '#e0ffe0';
     } catch (error) {
       console.error('送信エラー:', error);
-      timeCell.textContent = 'Error'; // ここで書き換わっていました
+      timeCell.textContent = 'Error';
     }
   });
 });

@@ -12,7 +12,6 @@ const config = {
 const dbClient = new Client(config);
 const router = new Router();
 
-// --- ページ表示用 ---
 const serveHtml = async (ctx: any, fileName: string) => {
   const content = await Deno.readTextFile(fileName);
   ctx.response.status = 200;
@@ -24,30 +23,30 @@ router.get('/', (ctx) => serveHtml(ctx, './index.html'));
 router.get('/analysis', (ctx) => serveHtml(ctx, './analysis.html'));
 router.get('/order', (ctx) => serveHtml(ctx, './order.html'));
 
-// --- 在庫一覧取得API ---
+// --- 在庫一覧を取得するAPI ---
 router.get('/api/inventory', async (ctx) => {
   try {
     const result = await dbClient.execute(`SELECT "商品名", "残量", "提案発注量" FROM inventory ORDER BY id ASC`);
     ctx.response.type = 'application/json; charset=utf-8';
     ctx.response.body = result.rows;
   } catch (err) {
+    console.error('Fetch Error:', err);
     ctx.response.status = 500;
   }
 });
 
-// --- 【重要】在庫更新API (これが不足していたためErrorになっていました) ---
+// --- 在庫を更新するAPI（ここが不足していました） ---
 router.post('/api/inventory-update', async (ctx) => {
   try {
-    // Oak v14 のリクエストボディ取得（await ctx.request.body.form() を使用）
+    // Oak v14 の正しいリクエストボディ取得方法
     const params = await ctx.request.body.form();
 
-    const itemId = params.get('item_id'); // 商品名
-    const balance = params.get('balance'); // 入力された数値
-    const lastInputter = params.get('last_inputter'); // 担当者名
+    const itemId = params.get('item_id');
+    const balance = params.get('balance');
+    const lastInputter = params.get('last_inputter');
 
-    console.log(`更新データ: ${itemId}, 数値: ${balance}, 担当: ${lastInputter}`);
+    console.log(`更新開始: ${itemId}, 数値: ${balance}, 担当: ${lastInputter}`);
 
-    // Supabaseのデータを更新
     await dbClient.execute(`UPDATE inventory SET "残量" = $1, last_inputter = $2 WHERE "商品名" = $3`, [
       balance,
       lastInputter,
@@ -55,15 +54,15 @@ router.post('/api/inventory-update', async (ctx) => {
     ]);
 
     ctx.response.status = 200;
-    ctx.response.body = { status: 'success' };
+    ctx.response.body = { status: 'ok' };
   } catch (err) {
-    console.error('Update Error:', err);
+    console.error('Update Error (Server Side):', err);
     ctx.response.status = 500;
-    ctx.response.body = 'Update Failed';
+    ctx.response.body = { error: String(err) };
   }
 });
 
-// グラフ・予約データ用
+// 分析用API
 router.get('/api/analysis-data', async (ctx) => {
   try {
     const now = new Date();
