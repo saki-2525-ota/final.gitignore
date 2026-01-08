@@ -1,24 +1,24 @@
 async function initAnalysis() {
   try {
-    // データの取得
+    console.log('データ取得開始...');
     const response = await fetch('/api/analysis-data');
-    if (!response.ok) throw new Error('データ取得に失敗しました');
+    if (!response.ok) throw new Error('APIに接続できません');
     const data = await response.json();
+    console.log('受信データ:', data);
 
-    // 1. 予約状況の表示
-    document.getElementById('tomorrow-date').textContent = data.tomorrow || '---';
+    // 予約状況
+    document.getElementById('tomorrow-date').textContent = data.tomorrow || '不明';
     document.getElementById('adult-count').textContent = data.adults || 0;
     document.getElementById('kids-count').textContent = data.kids || 0;
 
-    // 2. グラフの表示
+    // グラフデータ
     if (!data.chartData || data.chartData.length === 0) {
-      console.warn('グラフに表示する商品データがありません');
+      console.warn('グラフ用データが空です');
       return;
     }
 
     const ctx = document.getElementById('radarChart').getContext('2d');
 
-    // 既存のグラフがあれば破棄
     if (window.myRadarChart) {
       window.myRadarChart.destroy();
     }
@@ -32,30 +32,24 @@ async function initAnalysis() {
             label: 'ファミリー人気度',
             data: data.chartData.map((d) => d.family_score ?? 5),
             backgroundColor: 'rgba(255, 153, 51, 0.2)',
-            borderColor: '#ff9933',
-            borderWidth: 2
+            borderColor: '#ff9933'
           },
           {
             label: 'お一人様人気度',
             data: data.chartData.map((d) => d.solo_score ?? 5),
             backgroundColor: 'rgba(54, 162, 235, 0.2)',
-            borderColor: 'rgb(54, 162, 235)',
-            borderWidth: 2
+            borderColor: 'rgb(54, 162, 235)'
           }
         ]
       },
       options: {
-        responsive: true,
         scales: {
-          r: {
-            suggestedMin: 0,
-            suggestedMax: 10
-          }
+          r: { suggestedMin: 0, suggestedMax: 10 }
         }
       }
     });
-  } catch (err) {
-    console.error('分析画面の読み込みエラー:', err);
+  } catch (error) {
+    console.error('読み込み失敗:', error);
   }
 }
 
