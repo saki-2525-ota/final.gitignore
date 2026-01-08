@@ -14,7 +14,7 @@ const dbClient = new Client(config);
 
 // --- 2. ページ処理用関数 ---
 
-// 発注ページ（動的データ注入）
+// 発注ページ用
 async function renderOrderPage(ctx: Context) {
   try {
     const result = await dbClient.execute('SELECT "商品名", "残量", "提案発注量" FROM inventory ORDER BY id ASC');
@@ -28,24 +28,32 @@ async function renderOrderPage(ctx: Context) {
     ctx.response.body = html;
     ctx.response.type = 'text/html';
   } catch (err) {
-    console.error('Order Page Error:', err);
     ctx.response.status = 500;
     ctx.response.body = 'Order Page Error';
   }
 }
 
-// 分析データAPI
+// ★【重要】分析データ取得API
 async function handleAnalysisData(ctx: Context) {
   try {
+    // 1. 日本時間の明日を計算
     const now = new Date();
     const tomorrow = new Date(now.getTime() + 9 * 60 * 60 * 1000 + 24 * 60 * 60 * 1000);
     const tomorrowStr = tomorrow.toISOString().split('T')[0];
+
+    // 2. 予約人数を取得 (reservationsテーブルから)
     const resResult = await dbClient.execute(
       `SELECT SUM(adult_count) as adults, SUM(children_count) as kids FROM reservations WHERE reservation_date = $1`,
       [tomorrowStr]
     );
     const stats = (resResult.rows[0] as any) || { adults: 0, kids: 0 };
-    const invResult = await dbClient.execute(`SELECT "商品名", family_score, solo_score FROM inventory`);
+
+    // 3. 商品スコアを取得 (inventoryテーブルから)
+    // family_score または solo_score が設定されている商品だけをグラフに出す
+    const invResult = await dbClient.execute(
+      `SELECT "商品名", family_score, solo_score FROM inventory WHERE family_score IS NOT NULL OR solo_score IS NOT NULL`
+    );
+
     ctx.response.body = {
       tomorrow: tomorrowStr,
       adults: Number(stats.adults || 0),
@@ -54,6 +62,7 @@ async function handleAnalysisData(ctx: Context) {
     };
     ctx.response.type = 'application/json';
   } catch (err) {
+    console.error('API Error:', err);
     ctx.response.status = 500;
     ctx.response.body = { error: 'API Error' };
   }
@@ -62,33 +71,25 @@ async function handleAnalysisData(ctx: Context) {
 // --- 3. ルーター設定 ---
 const router = new Router();
 
-// トップページ
 router.get('/', async (ctx) => {
   ctx.response.body = await Deno.readTextFile('./index.html');
   ctx.response.type = 'text/html';
 });
 
-// 各HTMLページへの対応（URLの打ち間違いやボタンの./ありなし両方に対応）
-const pages = ['inventory.html', 'reservations.html', 'analysis.html', 'order.html'];
-pages.forEach((page) => {
-  router.get(`/${page}`, async (ctx) => {
-    if (page === 'order.html') return renderOrderPage(ctx); // 発注だけは特別処理
-    try {
-      ctx.response.body = await Deno.readTextFile(`./${page}`);
-      ctx.response.type = 'text/html';
-    } catch {
-      ctx.response.status = 404;
-      ctx.response.body = `${page} が見つかりません。GitHubにファイルがあるか確認してください。`;
-    }
-  });
-});
-
-// HTML拡張子なしのURLにも対応
+// 各HTMLページ
+router.get('/order', renderOrderPage);
 router.get('/analysis', async (ctx) => {
   ctx.response.body = await Deno.readTextFile('./analysis.html');
   ctx.response.type = 'text/html';
 });
-router.get('/order', renderOrderPage);
+router.get('/inventory.html', async (ctx) => {
+  ctx.response.body = await Deno.readTextFile('./inventory.html');
+  ctx.response.type = 'text/html';
+});
+router.get('/reservations.html', async (ctx) => {
+  ctx.response.body = await Deno.readTextFile('./reservations.html');
+  ctx.response.type = 'text/html';
+});
 
 // API
 router.get('/api/analysis-data', handleAnalysisData);
@@ -102,26 +103,22 @@ router.post('/api/inventory-update', async (ctx) => {
   ctx.response.body = { ok: true };
 });
 
-// --- 4. 最終防衛策（静的ファイル用） ---
+// --- 4. アプリ起動と静的ファイル対策 ---
 const app = new Application();
 app.use(router.routes());
 app.use(router.allowedMethods());
 
 app.use(async (ctx) => {
   const path = ctx.request.url.pathname;
-  console.log(`[アクセス試行]: ${path}`);
   try {
     const content = await Deno.readFile(`.${path}`);
     if (path.endsWith('.css')) ctx.response.type = 'text/css';
     else if (path.endsWith('.js')) ctx.response.type = 'application/javascript';
-    else if (path.endsWith('.html')) ctx.response.type = 'text/html';
     ctx.response.body = content;
-  } catch (e) {
-    console.log(`[ファイル読み込み失敗]: ${path}`);
-    ctx.response.status = 404;
-    ctx.response.body = '404 Not Found - ファイルが見つかりません';
+  } catch {
+    // 404
   }
 });
 
-console.log('Server is running on http://localhost:8000/');
+console.log('Server is running!');
 await app.listen({ port: 8000 });
