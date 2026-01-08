@@ -10,35 +10,41 @@ const config = {
   tls: { enabled: false }
 };
 const dbClient = new Client(config);
-
 const router = new Router();
 
-// --- 各ページの表示設定 ---
+// --- ページ表示 (すべて charset=utf-8 を付与) ---
 
-// 1. トップページ
 router.get('/', async (ctx) => {
   const html = await Deno.readTextFile('./index.html');
+  ctx.response.status = 200;
   ctx.response.headers.set('Content-Type', 'text/html; charset=utf-8');
   ctx.response.body = html;
 });
 
-// 2. 分析ページ (分析ボタン)
 router.get('/analysis', async (ctx) => {
   const html = await Deno.readTextFile('./analysis.html');
+  ctx.response.status = 200;
   ctx.response.headers.set('Content-Type', 'text/html; charset=utf-8');
   ctx.response.body = html;
 });
 
-// 3. 発注ページ (発注ボタン)
 router.get('/order', async (ctx) => {
   try {
     const result = await dbClient.execute('SELECT "商品名", "残量", "提案発注量" FROM inventory ORDER BY id ASC');
     const rows = (result ? result.rows : []) as any[];
     let tableRowsHtml = '';
     for (const item of rows) {
-      tableRowsHtml += `<tr><td>${item['商品名']}</td><td>${item['残量']}</td><td>${item['提案発注量']}</td><td><input type="number" class="order-input" value="${item['提案発注量']}"></td><td class="last-updated">--:--</td><td><button class="update-btn">更新</button></td></tr>`;
+      tableRowsHtml += `<tr>
+        <td>${item['商品名']}</td>
+        <td>${item['残量']}</td>
+        <td>${item['提案発注量']}</td>
+        <td><input type="number" class="order-input" value="${item['提案発注量']}"></td>
+        <td class="last-updated">--:--</td>
+        <td><button class="update-btn">更新</button></td>
+      </tr>`;
     }
     const html = await Deno.readTextFile('./order.html');
+    ctx.response.status = 200;
     ctx.response.headers.set('Content-Type', 'text/html; charset=utf-8');
     ctx.response.body = html.replace(
       /<tbody id="order-body">[\s\S]*?<\/tbody>/,
@@ -46,10 +52,11 @@ router.get('/order', async (ctx) => {
     );
   } catch {
     ctx.response.status = 500;
+    ctx.response.body = 'データベースエラー';
   }
 });
 
-// 4. API (データ)
+// API
 router.get('/api/analysis-data', async (ctx) => {
   try {
     const invResult = await dbClient.execute(`SELECT "商品名", family_score, solo_score FROM inventory`);
@@ -69,10 +76,9 @@ const app = new Application();
 app.use(router.routes());
 app.use(router.allowedMethods());
 
-// 5. 静的ファイル (analysis.js / style.css)
+// 静的ファイル
 app.use(async (ctx) => {
   const path = ctx.request.url.pathname;
-  if (path === '/') return;
   try {
     const content = await Deno.readFile(`.${path}`);
     if (path.endsWith('.js')) ctx.response.headers.set('Content-Type', 'application/javascript; charset=utf-8');
@@ -83,5 +89,5 @@ app.use(async (ctx) => {
   }
 });
 
-console.log('--- ページごとの文字化け対策完了 ---');
+console.log('Server running: charset forced on all routes');
 await app.listen({ port: 8000 });
